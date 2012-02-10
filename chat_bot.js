@@ -10,6 +10,14 @@ mods = ["4e5fd1e0a3f7514e0f17966d","4e0b5a92a3f751466c05f6a1","4e1b553e4fe7d0313
 		"4e172b7da3f75169870e893a","4ee7aad8590ca257780002d9","4e932da84fe7d0424409028f","4e9000e74fe7d04235046f2f",
 		"4dfb86eea3f7515c5c024bf2"];
 
+funny = ["http://i.imgur.com/9Rtyr.gif", "http://i.imgur.com/xw7TD.gif", "http://i.imgur.com/wNYy2.gif", "http://i.imgur.com/yadNr.gif",
+		 "http://29.media.tumblr.com/tumblr_lyu1jeRgLx1r46qu0o9_250.gif", "http://27.media.tumblr.com/tumblr_lj7e34Tgt11qhy6c9o1_400.gif",
+		 "http://forgifs.com/gallery/d/186828-2/Soccer_headshot_grandma.gif", "http://i.imgur.com/N32NH.gif", "http://gif.mocksession.com/wp-content/uploads/2011/11/THE-MORTIFIED-PUNTER1.gif",
+		 "http://i.imgur.com/7uBzI.gif", "http://i.imgur.com/WdvwY.gif", "http://i.imgur.com/EjCQG.gif", "http://i.imgur.com/lpPa5.gif",
+		 "http://i.imgur.com/cBu0D.gif", "http://i.imgur.com/wBjbq.gif", "http://i.imgur.com/lnNnu.gif", "http://funny-pixel.com/wp-content/uploads/Funny-Polar-Bear.gif",
+		 "http://i.imgur.com/ezYaW.gif", "http://h10.abload.de/img/shesafirinherlazeroer5x.gif", "http://28.media.tumblr.com/tumblr_lxm0qxwBX51qje28jo1_r1_400.gif",
+		 "http://i.imgur.com/3hzxL.gif"];
+
 var bot = new Bot(AUTH, USERID, ROOMID);
 
 // enables REPL which allows interactive console control over bot
@@ -39,6 +47,7 @@ bot.on('newsong', function (data) {
 
 	// if freebie votes are on, bot will vote up on each new song
 	if (freebie === true) {
+		sleep(10000);
 		bot.vote('up');
 		console.log('auto-awesome');
 	}
@@ -109,6 +118,10 @@ bot.on('speak', function (data) {
 		}
 		else if (text.match(/show me the code/i)) {
 			bot.speak("Boom, sucka: https://github.com/atbrace/syzbot/blob/master/chat_bot.js");
+		}
+		else if (text.match(/make me laugh/i)) {
+			var funnyMessage = funny[Math.floor(Math.random() * funny.length)];
+			bot.speak(funnyMessage);
 		}
 		else if (text.indexOf(", I like this song") != -1 && text.indexOf("syzbot") != -1 && (mods.indexOf(data.userid) > -1)) {
 			bot.roomInfo(true, function(data) {
