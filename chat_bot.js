@@ -19,17 +19,20 @@ var user_to_follow = '4e932da84fe7d0424409028f';
 var currently_following = false;
 var freebie = false;
 
-var responses = ["soup?", "I'm not your buddy, guy.", "/monocle", "You think this is a game?", "Hi, can we be friends?"];
-	
+var responses = ["soup?", "I'm not your buddy, guy.", "/monocle", "You think this is a game?", "Hi, can we be friends?", "That's me!"];
 var danceMsgs = ["Okey dokey!", "/me shakes his moneymaker", "Get down on it!"];
 
+var songName; //name of currently playing song
+var genre; //genre of currently playing song
+var artist; //artist of currently playing song
+var newSong; //ID of currently playing song
 
 bot.on('newsong', function (data) { 
 
 	// for every new song, retrieve and store the metadata for console logging and genre 
-	var songName = data.room.metadata.current_song.metadata.song;
-	var genre = data.room.metadata.current_song.metadata.genre;
-	var artist = data.room.metadata.current_song.metadata.artist;
+	songName = data.room.metadata.current_song.metadata.song;
+	genre = data.room.metadata.current_song.metadata.genre;
+	artist = data.room.metadata.current_song.metadata.artist;
 
 	// log song info to the console
 	console.log('Song Info: "' + songName + '" by ', artist,'= ' + genre)
@@ -61,58 +64,61 @@ bot.on('speak', function (data) {
 		console.log('The dance commander told me to vote this up!');
 	}
 	
-	if (data.text.match(/syzbot/i)) {
-		if (data.text.match(/engage partymode/i) && (mods.indexOf(data.userid) > -1)) {
+	if (text.match(/syzbot/i)) {
+		if (text.match(/engage partymode/i) && (mods.indexOf(data.userid) > -1)) {
 			bot.speak('Wooooohoo!');	
 			freebie = true;
 			console.log('Freebie mode started.');
 		}
-		else if (data.text.match(/stop the party/i) && (mods.indexOf(data.userid) > -1)) {
+		else if (text.match(/stop the party/i) && (mods.indexOf(data.userid) > -1)) {
 			bot.speak("Aww, but I was having so much fun =[");	
 			freebie = false;
 			console.log('Freebie mode stopped.');
 		}
-		else if (data.text.match(/go to IDE/i) && (mods.indexOf(data.userid) > -1)) {
+		else if (text.match(/go to IDE/i) && (mods.indexOf(data.userid) > -1)) {
 			bot.speak("Okey dokey, see you there!");	
 			sleep(3000);
 			bot.roomRegister('4e2291cf14169c714d06c45a');
+			console.log("I left this room to go to IDE.");
 		}
-		else if (data.text.match(/go to DNGR/i) && (mods.indexOf(data.userid) > -1)) {
+		else if (text.match(/go to DNGR/i) && (mods.indexOf(data.userid) > -1)) {
 			bot.speak("Okey dokey, time to hang out with my DNGR friends!");	
 			sleep(3000);
 			bot.roomRegister('4e1b2a7a14169c1b670063cb');
+			console.log("I left this room to go to DNGR.");
 		}
-		else if (data.text.match(/dance/i)) {
-			bot.speak('Okey dokey!');
+		else if (text.match(/dance/i)) {
+			var response = danceMsgs[Math.floor(Math.random() * danceMsgs.length)];
+			bot.speak(response);
 			bot.vote('up');
 			console.log('Someone thinks I should be dancing, I guess I can do that.');
 		}
-		else if (data.text.match(/who made/i)) {
+		else if (text.match(/who made/i)) {
 			bot.speak("Wow, and they call me stupid. Read the name!");
 		}
-		else if (data.text.match(/hop up/i) && (mods.indexOf(data.userid) > -1)) {
+		else if (text.match(/hop up/i) && (mods.indexOf(data.userid) > -1)) {
 			bot.modifyLaptop('linux'); //sets the laptop the bot uses to linux. this value should never change for any reason.
-			bot.speak('Like this?');
+			bot.speak("Like this?");
 			bot.addDj();
-			console.log('I hopped up to the decks, I hope they like my music.');
+			console.log("I hopped up to the decks, I hope they like my music.");
 		}
-		else if (data.text.match(/sit/i) && (mods.indexOf(data.userid) > -1)) {
-			bot.speak( 'But how am I ever gonna get a spacesuit?' );	
+		else if (text.match(/sit/i) && (mods.indexOf(data.userid) > -1)) {
+			bot.speak("But how am I ever gonna get a spacesuit?");	
 			bot.remDj ();
-			console.log('I stepped down from the decks. I guess I still am not very good at this.');
+			console.log("I stepped down from the decks.");
 		}
-		else if (data.text.match(/show me the code/i)) {
-			bot.speak("https://github.com/atbrace/syzbot/blob/master/chat_bot.js");
+		else if (text.match(/show me the code/i)) {
+			bot.speak("Boom, sucka: https://github.com/atbrace/syzbot/blob/master/chat_bot.js");
 		}
 		else if (text.indexOf(", I like this song") != -1 && text.indexOf("syzbot") != -1 && (mods.indexOf(data.userid) > -1)) {
 			bot.roomInfo(true, function(data) {
-				var newSong = data.room.metadata.current_song._id;
-				var newSongName = songName = data.room.metadata.current_song.metadata.song;
+				newSong = data.room.metadata.current_song._id;
+				//var newSongName = songName = data.room.metadata.current_song.metadata.song;
 				bot.playlistAdd(newSong);
 				bot.snag();
 				bot.vote('up');
-				bot.speak('Wheeee! Now I can play "' + newSongName + '" for you!' );
-				console.log('I took the currently playing song for my own queue.');
+				bot.speak('Wheeee! Now I can play "' + songName + '" for you!' );
+				console.log("I took the currently playing song for my own queue.");
 			 });
 		}
 		else {
@@ -120,7 +126,12 @@ bot.on('speak', function (data) {
 			bot.speak(message);
 		}
 	}
-	
+
+	function sleep(ms) {
+		var dt = new Date();
+		dt.setTime(dt.getTime() + ms);
+		while (new Date().getTime() < dt.getTime());
+	}
 /*		
 	// Follow this user VERY EXPERIMENTAL, PROBABLY AKA CERTAINLY DOES NOT WORK
 	if ( data.userid == user_to_follow && text.indexOf("follow me") != -1 && text.indexOf("syzbot") != -1 ) {
@@ -140,11 +151,5 @@ bot.on('speak', function (data) {
 		handled_command = true;
 	}
 */
-
-	function sleep(ms) {
-		var dt = new Date();
-		dt.setTime(dt.getTime() + ms);
-		while (new Date().getTime() < dt.getTime());
-	}
 
 });
