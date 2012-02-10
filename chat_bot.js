@@ -4,7 +4,11 @@ var USERID = '4f11831e590ca243d1002366';
 var ROOMID = '4e2291cf14169c714d06c45a';
 var repl = require('repl');
 
-mods = ["4e5fd1e0a3f7514e0f17966d","4e0b5a92a3f751466c05f6a1","4e1b553e4fe7d0313f058337","4dfd70cd4fe7d0250a03de32","4e039092a3f751791b06f929","4e026d904fe7d0613b01506d","4e2dcae44fe7d015eb006309","4e02a72fa3f751791b02ad48","4e166547a3f751697809115c","4e1b54174fe7d0313f05781e","4e39de11a3f7512558025d88","4e270408a3f751245b007270","4e172b7da3f75169870e893a","4ee7aad8590ca257780002d9","4e932da84fe7d0424409028f","4e9000e74fe7d04235046f2f","4dfb86eea3f7515c5c024bf2"];
+mods = ["4e5fd1e0a3f7514e0f17966d","4e0b5a92a3f751466c05f6a1","4e1b553e4fe7d0313f058337","4dfd70cd4fe7d0250a03de32",
+		"4e039092a3f751791b06f929","4e026d904fe7d0613b01506d","4e2dcae44fe7d015eb006309","4e02a72fa3f751791b02ad48",
+		"4e166547a3f751697809115c","4e1b54174fe7d0313f05781e","4e39de11a3f7512558025d88","4e270408a3f751245b007270",
+		"4e172b7da3f75169870e893a","4ee7aad8590ca257780002d9","4e932da84fe7d0424409028f","4e9000e74fe7d04235046f2f",
+		"4dfb86eea3f7515c5c024bf2"];
 
 var bot = new Bot(AUTH, USERID, ROOMID);
 
@@ -15,12 +19,9 @@ var user_to_follow = '4e932da84fe7d0424409028f';
 var currently_following = false;
 var freebie = false;
 
-var responses = [
-	"soup?",
-	"I'm not your buddy, guy.",
-	"/monocle",
-	"You think this is a game?"
-	];
+var responses = ["soup?", "I'm not your buddy, guy.", "/monocle", "You think this is a game?", "Hi, can we be friends?"];
+	
+var danceMsgs = ["Okey dokey!", "/me shakes his moneymaker", "Get down on it!"];
 
 
 bot.on('newsong', function (data) { 
@@ -40,7 +41,7 @@ bot.on('newsong', function (data) {
 	}
 	
 	/*// detects if current song is dubstep from metadata. if so, asks to skip and then lames.
-	if( genre.indexOf("Dubstep") != -1 ) {
+	if( genre.text.match(/dubstep/i)) {
 			bot.speak("Ew, no dubstep in here. Skip please.");
 			sleep(1000);
 			bot.vote('down');
