@@ -62,7 +62,7 @@ bot.on('speak', function (data) {
 	
 	// END FREEBIE MODE
 	if ( text.indexOf("stop the party") != -1 && text.indexOf("syzbot") != -1 && (mods.indexOf(data.userid) > -1)) {
-		bot.speak('Wooooohoo!');	
+		bot.speak('If you say so =[');	
 		freebie = true;
 		console.log('Freebie mode stopped.');
 	}
