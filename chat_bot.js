@@ -14,7 +14,14 @@ repl.start('> ').context.bot = bot;
 var user_to_follow = '4e932da84fe7d0424409028f';
 var currently_following = false;
 var freebie = false;
-//var fuck_dubstep = true;
+
+var responses = [
+	"soup?",
+	"I'm not your buddy, guy.",
+	"/monocle",
+	"You think this is a game?"
+	];
+
 
 bot.on('newsong', function (data) { 
 
@@ -24,7 +31,7 @@ bot.on('newsong', function (data) {
 	var artist = data.room.metadata.current_song.metadata.artist;
 
 	// log song info to the console
-	console.log('Song Info: "' + songName + '" by ', artist,'=' + genre)
+	console.log('Song Info: "' + songName + '" by ', artist,'= ' + genre)
 
 	// if freebie votes are on, bot will vote up on each new song
 	if (freebie === true) {
@@ -32,13 +39,13 @@ bot.on('newsong', function (data) {
 		console.log('auto-awesome');
 	}
 	
-	// detects if current song is dubstep from metadata. if so, asks to skip and then lames.
+	/*// detects if current song is dubstep from metadata. if so, asks to skip and then lames.
 	if( genre.indexOf("Dubstep") != -1 ) {
-			bot.speak("Ew, no dubstep in here. Skip please." );
+			bot.speak("Ew, no dubstep in here. Skip please.");
 			sleep(1000);
 			bot.vote('down');
 			console.log('Someone played dubstep, so I lamed them.');
-	}
+	}*/
 });
 
 bot.on('speak', function (data) {
@@ -53,33 +60,66 @@ bot.on('speak', function (data) {
 		console.log('The dance commander told me to vote this up!');
 	}
 	
-	// TRIGGER FREEBIE MODE
-	if ( text.indexOf("engage partymode") != -1 && text.indexOf("syzbot") != -1 && (mods.indexOf(data.userid) > -1)) {
-		bot.speak('Wooooohoo!');	
-		freebie = true;
-		console.log('Freebie mode started.');
+	if (data.text.match(/syzbot/i)) {
+		if (data.text.match(/engage partymode/i) && (mods.indexOf(data.userid) > -1)) {
+			bot.speak('Wooooohoo!');	
+			freebie = true;
+			console.log('Freebie mode started.');
+		}
+		else if (data.text.match(/stop the party/i) && (mods.indexOf(data.userid) > -1)) {
+			bot.speak("Aww, but I was having so much fun =[");	
+			freebie = false;
+			console.log('Freebie mode stopped.');
+		}
+		else if (data.text.match(/go to IDE/i) && (mods.indexOf(data.userid) > -1)) {
+			bot.speak("Okey dokey, see you there!");	
+			sleep(3000);
+			bot.roomRegister('4e2291cf14169c714d06c45a');
+		}
+		else if (data.text.match(/go to DNGR/i) && (mods.indexOf(data.userid) > -1)) {
+			bot.speak("Okey dokey, time to hang out with my DNGR friends!");	
+			sleep(3000);
+			bot.roomRegister('4e1b2a7a14169c1b670063cb');
+		}
+		else if (data.text.match(/dance/i)) {
+			bot.speak('Okey dokey!');
+			bot.vote('up');
+			console.log('Someone thinks I should be dancing, I guess I can do that.');
+		}
+		else if (data.text.match(/who made/i)) {
+			bot.speak("Wow, and they call me stupid. Read the name!");
+		}
+		else if (data.text.match(/hop up/i) && (mods.indexOf(data.userid) > -1)) {
+			bot.modifyLaptop('linux'); //sets the laptop the bot uses to linux. this value should never change for any reason.
+			bot.speak('Like this?');
+			bot.addDj();
+			console.log('I hopped up to the decks, I hope they like my music.');
+		}
+		else if (data.text.match(/sit/i) && (mods.indexOf(data.userid) > -1)) {
+			bot.speak( 'But how am I ever gonna get a spacesuit?' );	
+			bot.remDj ();
+			console.log('I stepped down from the decks. I guess I still am not very good at this.');
+		}
+		else if (data.text.match(/show me the code/i)) {
+			bot.speak("https://github.com/atbrace/syzbot/blob/master/chat_bot.js");
+		}
+		else if (text.indexOf(", I like this song") != -1 && text.indexOf("syzbot") != -1 && (mods.indexOf(data.userid) > -1)) {
+			bot.roomInfo(true, function(data) {
+				var newSong = data.room.metadata.current_song._id;
+				var newSongName = songName = data.room.metadata.current_song.metadata.song;
+				bot.playlistAdd(newSong);
+				bot.snag();
+				bot.vote('up');
+				bot.speak('Wheeee! Now I can play "' + newSongName + '" for you!' );
+				console.log('I took the currently playing song for my own queue.');
+			 });
+		}
+		else {
+			var message = responses[Math.floor(Math.random() * responses.length)];
+			bot.speak(message);
+		}
 	}
 	
-	// END FREEBIE MODE
-	if ( text.indexOf("stop the party") != -1 && text.indexOf("syzbot") != -1 && (mods.indexOf(data.userid) > -1)) {
-		bot.speak('If you say so =[');	
-		freebie = false;
-		console.log('Freebie mode stopped.');
-	}
-	
-	// REGULAR UPVOTE
-	if (text.match(/^syzbot dance/i)) {
-		bot.speak('Okey dokey!');
-		bot.vote('up');
-		console.log('Someone thinks I should be dancing, I guess I can do that.');
-	}
-	
-	// BASIC CHAT RESPONSES
-	if (text.match(/^count/)) {
-		bot.speak('One, cat, four, potato.');
-		console.log('I am not very good at counting, but I tried anyways.');
-	}
-		
 /*		
 	// Follow this user VERY EXPERIMENTAL, PROBABLY AKA CERTAINLY DOES NOT WORK
 	if ( data.userid == user_to_follow && text.indexOf("follow me") != -1 && text.indexOf("syzbot") != -1 ) {
@@ -99,35 +139,6 @@ bot.on('speak', function (data) {
 		handled_command = true;
 	}
 */
-		
-	// Hop up
-	if (text.indexOf("hop up") != -1 && text.indexOf("syzbot") != -1 && (mods.indexOf(data.userid) > -1)) {
-		// sets laptop used to linux. there should be no reason to ever change this value
-		bot.modifyLaptop('linux');
-		bot.speak('Like this?');
-		bot.addDj();
-		console.log('I hopped up to the decks, I hope they like my music.');
-	 }
-	 
-	 // Stop DJing
-	if ( text.indexOf("sit") != -1 && text.indexOf("syzbot") != -1 && (mods.indexOf(data.userid) > -1)) {
-		bot.speak( 'But how am I ever gonna get a spacesuit?' );	
-		bot.remDj ();
-		console.log('I stepped down from the decks. I guess I still am not very good at this.');
-	}
-
-	// adds currently playing song to queue, and simultaneously votes up
-	if ( text.indexOf(", I like this song") != -1 && text.indexOf("syzbot") != -1 && (mods.indexOf(data.userid) > -1)) {
-		bot.roomInfo(true, function(data) {
-			var newSong = data.room.metadata.current_song._id;
-			var newSongName = songName = data.room.metadata.current_song.metadata.song;
-			bot.playlistAdd(newSong);
-			bot.snag();
-			bot.vote('up');
-			bot.speak('Wheeee! Now I can play "' + newSongName + '" for you!' );
-			console.log('I took the currently playing song for my own queue.');
-		 });
-	}
 
 	function sleep(ms) {
 		var dt = new Date();
