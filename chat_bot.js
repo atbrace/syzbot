@@ -65,11 +65,10 @@ bot.on('speak', function (data) {
 	}
 	
 	// handle input
-	
 	if(data.name == '#EVE') {
 		if (text.match(/it's your turn!. you have 30 seconds to step up!/i)) {
-				bot.addDj();
-				console.log("Stepped up to the decks");
+			bot.addDj();
+			console.log("Stepped up to the decks");
 		}
 	}
 	else if(data.name != 'syzbot' && data.name != '#EVE') {
