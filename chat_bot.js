@@ -49,7 +49,6 @@ bot.on('newsong', function (data) {
 
 	// if freebie votes are on, bot will vote up on each new song
 	if (freebie === true) {
-		sleep(10000);
 		bot.vote('up');
 		console.log('auto-awesome');
 	}
@@ -121,6 +120,14 @@ bot.on('speak', function (data) {
 		}
 		else if (text.match(/show me the code/i)) {
 			bot.speak("Boom, sucka: https://github.com/atbrace/syzbot/blob/master/chat_bot.js");
+		}
+		else if (text.match(/do your thang/i) && (mods.indexOf(data.userid) > -1)) {
+			bot.speak("*addme");
+			console.log("Added myself to the DJ queue");
+		}
+		else if (text.match(/it's your turn!. you have 30 seconds to step up!/i)) {
+			bot.addDj();
+			console.log("Stepped up to the decks");
 		}
 		else if (text.match(/make me laugh/i)) {
 			var funnyMessage = funny[Math.floor(Math.random() * funny.length)];
