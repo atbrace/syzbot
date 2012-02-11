@@ -10,7 +10,7 @@ mods = ["4e5fd1e0a3f7514e0f17966d","4e0b5a92a3f751466c05f6a1","4e1b553e4fe7d0313
 		"4e172b7da3f75169870e893a","4ee7aad8590ca257780002d9","4e932da84fe7d0424409028f","4e9000e74fe7d04235046f2f",
 		"4dfb86eea3f7515c5c024bf2"];
 
-funny = ["http://i.imgur.com/9Rtyr.gif", "http://i.imgur.com/xw7TD.gif", "http://i.imgur.com/wNYy2.gif", "http://i.imgur.com/yadNr.gif",
+var funny = ["http://i.imgur.com/9Rtyr.gif", "http://i.imgur.com/xw7TD.gif", "http://i.imgur.com/wNYy2.gif", "http://i.imgur.com/yadNr.gif",
 		 "http://29.media.tumblr.com/tumblr_lyu1jeRgLx1r46qu0o9_250.gif", "http://27.media.tumblr.com/tumblr_lj7e34Tgt11qhy6c9o1_400.gif",
 		 "http://forgifs.com/gallery/d/186828-2/Soccer_headshot_grandma.gif", "http://i.imgur.com/N32NH.gif", "http://gif.mocksession.com/wp-content/uploads/2011/11/THE-MORTIFIED-PUNTER1.gif",
 		 "http://i.imgur.com/7uBzI.gif", "http://i.imgur.com/WdvwY.gif", "http://i.imgur.com/EjCQG.gif", "http://i.imgur.com/lpPa5.gif",
@@ -28,9 +28,10 @@ repl.start('> ').context.bot = bot;
 var user_to_follow = '4e932da84fe7d0424409028f';
 var currently_following = false;
 var freebie = false;
-
-var responses = ["soup?", "I'm not your buddy, guy.", "/monocle", "You think this is a game?", "Hi, can we be friends?", "That's me!"];
-var danceMsgs = ["Okey dokey!", "/me shakes his moneymaker", "Get down on it!", "/me boogies"];
+var allow_disco_mode = false;
+var current_avatar = 5; 
+var responses = ["soup?", "I'm not your buddy, guy.", "/monocle", "You think this is a game?", "Hi, can we be friends?", "That's me!", "I'm not your guy, pal"];
+var danceMsgs = ["Okey dokey!", "/me shakes his moneymaker", "Get down on it!", "/me boogies", "/me teaches you how to dougie"];
 
 var songName; //name of currently playing song
 var genre; //genre of currently playing song
@@ -52,7 +53,7 @@ bot.on('newsong', function (data) {
 		bot.vote('up');
 		console.log('auto-awesome');
 	}
-	
+
 	/*// detects if current song is dubstep from metadata. if so, asks to skip and then lames.
 	if(xxxxxxxxx)) {
 			bot.speak("Ew, no dubstep in here. Skip please.");
@@ -75,81 +76,107 @@ bot.on('speak', function (data) {
 	}
 	
 	// handle input
-	if (text.match(/syzbot/i)) {
-		if (text.match(/engage partymode/i) && (mods.indexOf(data.userid) > -1)) {
-			bot.speak('Wooooohoo!');	
-			freebie = true;
-			console.log('Freebie mode started.');
-		}
-		else if (text.match(/stop the party/i) && (mods.indexOf(data.userid) > -1)) {
-			bot.speak("Aww, but I was having so much fun =[");	
-			freebie = false;
-			console.log('Freebie mode stopped.');
-		}
-		else if (text.match(/go to IDE/i) && (mods.indexOf(data.userid) > -1)) {
-			bot.speak("Okey dokey, see you there!");	
-			sleep(3000);
-			bot.roomRegister('4e2291cf14169c714d06c45a');
-			console.log("I left this room to go to IDE.");
-		}
-		else if (text.match(/go to DNGR/i) && (mods.indexOf(data.userid) > -1)) {
-			bot.speak("Okey dokey, time to hang out with my DNGR friends!");	
-			sleep(3000); // wait 3 seconds
-			bot.roomRegister('4e1b2a7a14169c1b670063cb'); // sends bot to room with specified ROOMID
-			console.log("I left this room to go to DNGR.");
-		}
-		else if (text.match(/dance/i)) {
-			var response = danceMsgs[Math.floor(Math.random() * danceMsgs.length)]; // pull random response from danceMsgs array
-			bot.speak(response);
-			bot.vote('up');
-			console.log('Someone thinks I should be dancing, I guess I can do that.');
-		}
-		else if (text.match(/who made/i)) {
-			bot.speak("Wow, and they call me stupid. Read the name!");
-		}
-		else if (text.match(/hop up/i) && (mods.indexOf(data.userid) > -1)) {
-			bot.modifyLaptop('linux'); //sets the laptop the bot uses to linux. this value should never change for any reason.
-			bot.speak("Like this?");
-			bot.addDj();
-			console.log("I hopped up to the decks, I hope they like my music.");
-		}
-		else if (text.match(/sit/i) && (mods.indexOf(data.userid) > -1)) {
-			bot.speak("But how am I ever gonna get a spacesuit?");	
-			bot.remDj ();
-			console.log("I stepped down from the decks.");
-		}
-		else if (text.match(/show me the code/i)) {
-			bot.speak("Boom, sucka: https://github.com/atbrace/syzbot/blob/master/chat_bot.js");
-		}
-		else if (text.match(/do your thang/i) && (mods.indexOf(data.userid) > -1)) {
-			bot.speak("*addme");
-			console.log("Added myself to the DJ queue");
-		}
-		else if (text.match(/it's your turn!. you have 30 seconds to step up!/i)) {
-			bot.addDj();
-			console.log("Stepped up to the decks");
-		}
-		else if (text.match(/make me laugh/i)) {
-			var funnyMessage = funny[Math.floor(Math.random() * funny.length)];
-			bot.speak(funnyMessage);
-		}
-		else if (text.match(/I like this song/i) && (mods.indexOf(data.userid) > -1)) {
-			bot.roomInfo(true, function(data) {
-				newSong = data.room.metadata.current_song._id;
-				//var newSongName = songName = data.room.metadata.current_song.metadata.song;
-				bot.playlistAdd(newSong);
-				bot.snag();
-				bot.vote('up');
-				bot.speak('Wheeee! Now I can play "' + songName + '" for you!' );
-				console.log("I took the currently playing song for my own queue.");
-			 });
-		}
-		else {
-			var message = responses[Math.floor(Math.random() * responses.length)];
-			bot.speak(message);
+	
+	if(data.name == '#EVE') {
+		if (text.match(/it's your turn!. you have 30 seconds to step up!/i)) {
+				bot.addDj();
+				console.log("Stepped up to the decks");
 		}
 	}
-
+	else if(data.name != 'syzbot' && data.name != '#EVE') {
+		if (text.match(/syzbot/i)) {
+			if (text.match(/engage partymode/i) && (mods.indexOf(data.userid) > -1)) {
+				bot.speak('Wooooohoo!');	
+				freebie = true;
+				console.log('Freebie mode started.');
+			}
+			else if (text.match(/stop the party/i) && (mods.indexOf(data.userid) > -1)) {
+				bot.speak("Aww, but I was having so much fun =[");	
+				freebie = false;
+				console.log('Freebie mode stopped.');
+			}
+			else if (text.match(/go to IDE/i) && data.userid == user_to_follow) {
+				bot.speak("Okey dokey, see you there!");	
+				sleep(3000);
+				bot.roomRegister('4e2291cf14169c714d06c45a');
+				console.log("I left this room to go to IDE.");
+			}
+			else if (text.match(/go to DNGR/i) && data.userid == user_to_follow) {
+				bot.speak("Okey dokey, time to hang out with my DNGR friends!");	
+				sleep(3000); // wait 3 seconds
+				bot.roomRegister('4e1b2a7a14169c1b670063cb'); // sends bot to room with specified ROOMID
+				console.log("I left this room to go to DNGR.");
+			}
+			else if (text.match(/dance/i)) {
+				var response = danceMsgs[Math.floor(Math.random() * danceMsgs.length)]; // pull random response from danceMsgs array
+				bot.speak(response);
+				bot.vote('up');
+				console.log('Someone thinks I should be dancing, I guess I can do that.');
+			}
+			else if (text.match(/who made/i)) {
+				bot.speak("Wow, and they call me stupid. Read the name!");
+			}
+			else if (text.match(/hop up/i) && (mods.indexOf(data.userid) > -1)) {
+				bot.modifyLaptop('linux'); //sets the laptop the bot uses to linux. this value should never change for any reason.
+				bot.speak("Like this?");
+				bot.addDj();
+				console.log("I hopped up to the decks, I hope they like my music.");
+			}
+			else if (text.match(/sit/i) && (mods.indexOf(data.userid) > -1)) {
+				bot.speak("But how am I ever gonna get a spacesuit?");	
+				bot.remDj ();
+				console.log("I stepped down from the decks.");
+			}
+			else if (text.match(/show me the code/i)) {
+				bot.speak("Boom, sucka: https://github.com/atbrace/syzbot/blob/master/chat_bot.js");
+			}
+			else if (text.match(/do your thang/i) && (mods.indexOf(data.userid) > -1)) {
+				bot.speak("*addme");
+				console.log("Added myself to the DJ queue");
+			}
+			else if (text.match(/make me laugh/i)) {
+				var funnyMessage = funny[Math.floor(Math.random() * funny.length)];
+				bot.speak(funnyMessage);
+			}
+			else if (text.match(/untappd/i)) {
+				bot.speak('http://untappd.com/user/syz');
+			}
+			else if (data.userid == user_to_follow && text.match(/disco/i)) {
+				if(text.match(/start/i)) {
+					allow_disco_mode = true;
+					var discoTimer= setInterval(function() {
+						if( !allow_disco_mode ) {
+							clearInterval(discoTimer);
+							return;
+						}
+						if( current_avatar < 9 ) {
+							current_avatar++;
+						} else {
+							current_avatar = 0;
+						}
+						bot.setAvatar(current_avatar);
+					},700);
+				} else {
+					allow_disco_mode = false;
+					bot.setAvatar(5);
+				}
+			}
+			else if (text.match(/I like this song/i) && (mods.indexOf(data.userid) > -1)) {
+				bot.roomInfo(true, function(data) {
+					newSong = data.room.metadata.current_song._id;
+					bot.playlistAdd(newSong);
+					bot.snag();
+					bot.vote('up');
+					bot.speak('Wheeee! Now I can play "' + songName + '" for you!' );
+					console.log("I took the currently playing song for my own queue.");
+				 });
+			}
+			else {
+				var message = responses[Math.floor(Math.random() * responses.length)];
+				bot.speak(message);
+			}
+		}
+	}
 	function sleep(ms) {
 		var dt = new Date();
 		dt.setTime(dt.getTime() + ms);
@@ -164,7 +191,7 @@ bot.on('speak', function (data) {
 		var followTimer= setInterval( function() {				
 			bot.stalk( user_to_follow, function(data) {
 				if( data.roomId != current_room ) {
-					changeRooms( bot, data.roomId );
+					bot.roomRegister(data.roomId );
 					current_room = data.roomId;
 					clearInterval(followTimer);
 					currently_following = false;
