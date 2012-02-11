@@ -1,37 +1,26 @@
+// data.js file exports data to this file. keeps things tidy, and keeps auth off of github
+
 var Bot    = require('ttapi');
-var AUTH   = 'auth+live+3f02eacf6814bf0daf2402e786cfd86cda113cc4';
+var AUTH   = require('./data.js').auth;
 var USERID = '4f11831e590ca243d1002366';
 var ROOMID = '4e2291cf14169c714d06c45a';
 var repl = require('repl');
-
-mods = ["4e5fd1e0a3f7514e0f17966d","4e0b5a92a3f751466c05f6a1","4e1b553e4fe7d0313f058337","4dfd70cd4fe7d0250a03de32",
-		"4e039092a3f751791b06f929","4e026d904fe7d0613b01506d","4e2dcae44fe7d015eb006309","4e02a72fa3f751791b02ad48",
-		"4e166547a3f751697809115c","4e1b54174fe7d0313f05781e","4e39de11a3f7512558025d88","4e270408a3f751245b007270",
-		"4e172b7da3f75169870e893a","4ee7aad8590ca257780002d9","4e932da84fe7d0424409028f","4e9000e74fe7d04235046f2f",
-		"4dfb86eea3f7515c5c024bf2"];
-
-var funny = ["http://i.imgur.com/9Rtyr.gif", "http://i.imgur.com/xw7TD.gif", "http://i.imgur.com/wNYy2.gif", "http://i.imgur.com/yadNr.gif",
-		 "http://29.media.tumblr.com/tumblr_lyu1jeRgLx1r46qu0o9_250.gif", "http://27.media.tumblr.com/tumblr_lj7e34Tgt11qhy6c9o1_400.gif",
-		 "http://forgifs.com/gallery/d/186828-2/Soccer_headshot_grandma.gif", "http://i.imgur.com/N32NH.gif", "http://gif.mocksession.com/wp-content/uploads/2011/11/THE-MORTIFIED-PUNTER1.gif",
-		 "http://i.imgur.com/7uBzI.gif", "http://i.imgur.com/WdvwY.gif", "http://i.imgur.com/EjCQG.gif", "http://i.imgur.com/lpPa5.gif",
-		 "http://i.imgur.com/cBu0D.gif", "http://i.imgur.com/wBjbq.gif", "http://i.imgur.com/lnNnu.gif", "http://funny-pixel.com/wp-content/uploads/Funny-Polar-Bear.gif",
-		 "http://i.imgur.com/ezYaW.gif", "http://h10.abload.de/img/shesafirinherlazeroer5x.gif", "http://28.media.tumblr.com/tumblr_lxm0qxwBX51qje28jo1_r1_400.gif",
-		 "http://i.imgur.com/3hzxL.gif", "http://i.imgur.com/2z0K3.gif", "http://i.imgur.com/URcCU.gif", "http://markmalazarte.com/lollerskates.gif",
-		 "http://i.imgur.com/C9TCp.gif", "http://i.imgur.com/3OSVm.gif", "http://i.imgur.com/IOx2G.gif", "http://i.imgur.com/qze4i.gif",
-		 "http://i.imgur.com/NZGpG.gif", "http://i.imgur.com/JW04v.gif"];
 
 var bot = new Bot(AUTH, USERID, ROOMID);
 
 // enables REPL which allows interactive console control over bot
 repl.start('> ').context.bot = bot;
 
-var user_to_follow = '4e932da84fe7d0424409028f';
 var currently_following = false;
 var freebie = false;
 var allow_disco_mode = false;
 var current_avatar = 5; 
-var responses = ["soup?", "I'm not your buddy, guy.", "/monocle", "You think this is a game?", "Hi, can we be friends?", "That's me!", "I'm not your guy, pal"];
-var danceMsgs = ["Okey dokey!", "/me shakes his moneymaker", "Get down on it!", "/me boogies", "/me teaches you how to dougie"];
+
+var mods = require('./data.js').mods;
+var funny = require('./data.js').funny;
+var user_to_follow = require('./data.js').followId;
+var responses = require('./data.js').responses;
+var danceMsgs = require('./data.js').dance;
 
 var songName; //name of currently playing song
 var genre; //genre of currently playing song
@@ -141,7 +130,7 @@ bot.on('speak', function (data) {
 			else if (text.match(/untappd/i)) {
 				bot.speak('http://untappd.com/user/syz');
 			}
-			else if (data.userid == user_to_follow && text.match(/disco/i)) {
+			else if (text.match(/disco/i) && data.userid == user_to_follow) {
 				if(text.match(/start/i)) {
 					allow_disco_mode = true;
 					var discoTimer= setInterval(function() {
@@ -156,7 +145,8 @@ bot.on('speak', function (data) {
 						}
 						bot.setAvatar(current_avatar);
 					},700);
-				} else {
+				}
+				else if (text.match(/stop/i)){
 					allow_disco_mode = false;
 					bot.setAvatar(5);
 				}
