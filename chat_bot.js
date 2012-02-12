@@ -1,9 +1,10 @@
-// data.js file exports data to this file. keeps things tidy, and keeps auth off of github
+//bot requires node.js and the turntable API by alain gilbert
+// data.js file in same directory exports data to this file. keeps things tidy, and keeps auth off of github
 
 var Bot    = require('ttapi');
-var AUTH   = require('./data.js').auth;
-var USERID = '4f11831e590ca243d1002366';
-var ROOMID = '4e2291cf14169c714d06c45a';
+var AUTH   = require('./data.js').auth; //authID of bot from turntable cookie (ctrl+shift+J in chrome)
+var USERID = '4f11831e590ca243d1002366'; //userID of bot from turntable cookie (ctrl+shift+J in chrome)
+var ROOMID = '4e2291cf14169c714d06c45a'; //roomID of bot starting room from room's page source
 var repl = require('repl');
 
 var bot = new Bot(AUTH, USERID, ROOMID);
@@ -11,16 +12,16 @@ var bot = new Bot(AUTH, USERID, ROOMID);
 // enables REPL which allows interactive console control over bot
 repl.start('> ').context.bot = bot;
 
-var currently_following = false;
-var freebie = false;
-var allow_disco_mode = false;
-var current_avatar = 5; 
+var currently_following = false; //follow toggle
+var freebie = false; //freebonus toggle
+var allow_disco_mode = false; //discomode toggle (shuffles through avatars)
+var current_avatar = 5; //brown spiky hair avatar. i think it suits me
 
-var mods = require('./data.js').mods;
-var funny = require('./data.js').funny;
-var user_to_follow = require('./data.js').followId;
-var responses = require('./data.js').responses;
-var danceMsgs = require('./data.js').dance;
+var mods = require('./data.js').mods; //list of user IDs of IDE mods
+var funny = require('./data.js').funny; //list of .gifs that i find hilarious
+var user_to_follow = require('./data.js').followId; //my userID, so bot can follow me
+var responses = require('./data.js').responses; //basic chat responses, when no further input is given
+var danceMsgs = require('./data.js').dance; //responses to dance command
 
 var songName; //name of currently playing song
 var genre; //genre of currently playing song
@@ -43,13 +44,14 @@ bot.on('newsong', function (data) {
 		console.log('auto-awesome');
 	}
 
-	/*// detects if current song is dubstep from metadata. if so, asks to skip and then lames.
-	if(xxxxxxxxx)) {
+/*	// detects if current song is dubstep from metadata. if so, asks to skip and then lames.
+	if(genre.text.match(/dubstep/i)) {
 			bot.speak("Ew, no dubstep in here. Skip please.");
 			sleep(1000);
 			bot.vote('down');
 			console.log('Someone played dubstep, so I lamed them.');
-	}*/
+	}
+*/
 });
 
 bot.on('speak', function (data) {
@@ -66,7 +68,7 @@ bot.on('speak', function (data) {
 	
 	// handle input
 	if(data.name == '#EVE') {
-		if (text.match(/it's your turn!. you have 30 seconds to step up!/i)) {
+		if (text.match(/^syzbot/i) && text.match(/it's your turn!. you have 30 seconds to step up!/i)) {
 			bot.addDj();
 			console.log("Stepped up to the decks");
 		}
@@ -83,17 +85,32 @@ bot.on('speak', function (data) {
 				freebie = false;
 				console.log('Freebie mode stopped.');
 			}
-			else if (text.match(/go to IDE/i) && data.userid == user_to_follow) {
-				bot.speak("Okey dokey, see you there!");	
-				sleep(3000);
-				bot.roomRegister('4e2291cf14169c714d06c45a');
-				console.log("I left this room to go to IDE.");
+			else if (text.match(/go to IDE/i)) {
+				if (data.userid == user_to_follow) {
+					bot.speak("Okey dokey, see you there!");	
+					sleep(3000);
+					bot.roomRegister('4e2291cf14169c714d06c45a');
+					console.log("I left this room to go to IDE.");
+				}
+				else {bot.speak("You aren't my real dad!")};
 			}
-			else if (text.match(/go to DNGR/i) && data.userid == user_to_follow) {
-				bot.speak("Okey dokey, time to hang out with my DNGR friends!");	
-				sleep(3000); // wait 3 seconds
-				bot.roomRegister('4e1b2a7a14169c1b670063cb'); // sends bot to room with specified ROOMID
-				console.log("I left this room to go to DNGR.");
+			else if (text.match(/go to DNGR/i))  {
+				if (data.userid == user_to_follow) {
+					bot.speak("Okey dokey, time to hang out with my DNGR friends!");	
+					sleep(3000); // wait 3 seconds
+					bot.roomRegister('4e1b2a7a14169c1b670063cb'); // sends bot to room with specified ROOMID
+					console.log("I left this room to go to DNGR.");
+				}
+				else {bot.speak("You aren't my real dad!")};
+			}
+			else if (text.match(/go to izo/i))	{
+				if (data.userid == user_to_follow) {
+					bot.speak("Okay...woofus scares me sometimes though");	
+					sleep(3000); // wait 3 seconds
+					bot.roomRegister('4e4460f314169c06532bc9c9'); // sends bot to room with specified ROOMID
+					console.log("I left this room to go to izotope.");
+				}
+				else {bot.speak("You aren't my real dad!")};
 			}
 			else if (text.match(/dance/i)) {
 				var response = danceMsgs[Math.floor(Math.random() * danceMsgs.length)]; // pull random response from danceMsgs array
@@ -166,6 +183,7 @@ bot.on('speak', function (data) {
 			}
 		}
 	}
+	
 	function sleep(ms) {
 		var dt = new Date();
 		dt.setTime(dt.getTime() + ms);
