@@ -3,8 +3,8 @@
 
 var Bot    = require('ttapi');
 var AUTH   = require('./data.js').auth; //authID of bot from turntable cookie (ctrl+shift+J in chrome)
-var USERID = '4f11831e590ca243d1002366'; //userID of bot from turntable cookie (ctrl+shift+J in chrome)
-var ROOMID = '4e2291cf14169c714d06c45a'; //roomID of bot starting room from room's page source
+var USERID = require('./data.js').userid; //userID of bot from turntable cookie (ctrl+shift+J in chrome)
+var ROOMID = require('./data.js').roomid; //roomID of bot starting room from room's page source
 var repl = require('repl');
 
 var bot = new Bot(AUTH, USERID, ROOMID);
@@ -27,6 +27,7 @@ var songName; //name of currently playing song
 var genre; //genre of currently playing song
 var artist; //artist of currently playing song
 var newSong; //ID of currently playing song
+
 
 bot.on('newsong', function (data) { 
 
@@ -89,7 +90,7 @@ bot.on('speak', function (data) {
 				if (data.userid == user_to_follow) {
 					bot.speak("Okey dokey, see you there!");	
 					sleep(3000);
-					bot.roomRegister('4e2291cf14169c714d06c45a');
+					bot.roomRegister(ROOMID);
 					console.log("I left this room to go to IDE.");
 				}
 				else {bot.speak("You aren't my real dad!")};
@@ -109,6 +110,15 @@ bot.on('speak', function (data) {
 					sleep(3000); // wait 3 seconds
 					bot.roomRegister('4e4460f314169c06532bc9c9'); // sends bot to room with specified ROOMID
 					console.log("I left this room to go to izotope.");
+				}
+				else {bot.speak("You aren't my real dad!")};
+			}
+			else if (text.match(/go to SMILE/i))	{
+				if (data.userid == user_to_follow) {
+					bot.speak("I'm on my way!");	
+					sleep(3000); // wait 3 seconds
+					bot.roomRegister('4f2a54c40c4cc8075f9e9103'); // sends bot to room with specified ROOMID
+					console.log("I left this room to go to SMILE.");
 				}
 				else {bot.speak("You aren't my real dad!")};
 			}
@@ -142,9 +152,6 @@ bot.on('speak', function (data) {
 			else if (text.match(/make me laugh/i)) {
 				var funnyMessage = funny[Math.floor(Math.random() * funny.length)];
 				bot.speak(funnyMessage);
-			}
-			else if (text.match(/untappd/i)) {
-				bot.speak('http://untappd.com/user/syz');
 			}
 			else if (text.match(/disco/i) && data.userid == user_to_follow) {
 				if(text.match(/start/i)) {
