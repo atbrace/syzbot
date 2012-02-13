@@ -28,6 +28,18 @@ var genre; //genre of currently playing song
 var artist; //artist of currently playing song
 var newSong; //ID of currently playing song
 
+var lastfmapi = require('./data.js').lastfmApi;
+var lastfmsecret = require('./data.js').lastfmSecret;
+
+var LastFmNode = require('lastfm').LastFmNode;
+
+var lastfm = new LastFmNode({
+	api_key: lastfmapi,    // sign-up for a key at http://www.last.fm/api
+	secret: lastfmsecret
+});
+
+bot.debug = false;
+
 
 bot.on('newsong', function (data) { 
 
@@ -57,6 +69,7 @@ bot.on('newsong', function (data) {
 
 bot.on('speak', function (data) {
 
+	var current_room = data.roomId;
    	var name = data.name;
    	var text = data.text;
 
@@ -85,6 +98,25 @@ bot.on('speak', function (data) {
 				bot.speak("Aww, but I was having so much fun =[");	
 				freebie = false;
 				console.log('Freebie mode stopped.');
+			}
+			else if (text.match(/genre/i)) {
+				var request = lastfm.request("track.getInfo", {
+					track: songName,
+					artist: artist,
+					handlers: {
+						success: function(data) {
+							console.log("Success: " + data);
+							bot.speak(data.track.toptags.tag[0].name);
+						},
+						error: function(error) {
+							console.log("Error: " + error.message);
+							bot.speak("I don't know, aren't you supposed to be the smart one?");
+						}
+					}
+				});
+			}
+			else if (text.match(/restore order/i)) {
+				bot.speak("http://i.imgur.com/VpFx7.jpg");
 			}
 			else if (text.match(/go to IDE/i)) {
 				if (data.userid == user_to_follow) {
@@ -184,6 +216,21 @@ bot.on('speak', function (data) {
 					console.log("I took the currently playing song for my own queue.");
 				 });
 			}
+			else if (text.match(/follow me/i) && data.userid == user_to_follow) {
+				bot.speak("Yes sir, let's go!" );
+				currently_following = true;
+				
+				var followTimer= setInterval( function() {				
+					bot.stalk( user_to_follow, function(data) {
+						if( data.roomId != current_room ) {
+							bot.roomRegister(data.roomId );
+							current_room = data.roomId;
+							clearInterval(followTimer);
+							currently_following = false;
+						}
+					}); // end bot stalk	
+				},5000);
+			}
 			else {
 				var message = responses[Math.floor(Math.random() * responses.length)];
 				bot.speak(message);
@@ -196,24 +243,6 @@ bot.on('speak', function (data) {
 		dt.setTime(dt.getTime() + ms);
 		while (new Date().getTime() < dt.getTime());
 	}
-/*		
-	// Follow this user VERY EXPERIMENTAL, PROBABLY AKA CERTAINLY DOES NOT WORK
-	if ( data.userid == user_to_follow && text.indexOf("follow me") != -1 && text.indexOf("syzbot") != -1 ) {
-		bot.speak("Yes sir, let's go!" );
-		currently_following = true;
 
-		var followTimer= setInterval( function() {				
-			bot.stalk( user_to_follow, function(data) {
-				if( data.roomId != current_room ) {
-					bot.roomRegister(data.roomId );
-					current_room = data.roomId;
-					clearInterval(followTimer);
-					currently_following = false;
-				}
-			}); // end bot stalk	
-		},2000);
-		handled_command = true;
-	}
-*/
 
 });
