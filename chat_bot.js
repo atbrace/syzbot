@@ -16,6 +16,7 @@ var currently_following = false; //follow toggle
 var freebie = false; //freebonus toggle
 var allow_disco_mode = false; //discomode toggle (shuffles through avatars)
 var current_avatar = 5; //brown spiky hair avatar. i think it suits me
+var current_room = ROOMID;
 
 var mods = require('./data.js').mods; //list of user IDs of IDE mods
 var funny = require('./data.js').funny; //list of .gifs that i find hilarious
@@ -40,6 +41,16 @@ var lastfm = new LastFmNode({
 
 bot.debug = false;
 
+bot.on('roomChanged',  function (data) { console.log('syzbot has entered a room.'); 
+ 
+	bot.stalk( user_to_follow , function(data) {
+		if (data.roomId != current_room) {
+		console.log( 'Seeking syz...' ); 
+		bot.roomRegister(data.roomId);
+		current_room = data.roomId;
+		}
+	});
+});
 
 bot.on('newsong', function (data) { 
 
