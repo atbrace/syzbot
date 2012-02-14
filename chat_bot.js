@@ -16,10 +16,11 @@ var currently_following = false; //follow toggle
 var freebie = false; //freebonus toggle
 var allow_disco_mode = false; //discomode toggle (shuffles through avatars)
 var current_avatar = 5; //brown spiky hair avatar. i think it suits me
+var currentRoom = ROOMID; //for bot stalking purposes
 
 var mods = require('./data.js').mods; //list of user IDs of IDE mods
 var funny = require('./data.js').funny; //list of .gifs that i find hilarious
-var user_to_follow = require('./data.js').followId; //my userID, so bot can follow me
+var userToFollow = require('./data.js').followId; //my userID, so bot can follow me
 var responses = require('./data.js').responses; //basic chat responses, when no further input is given
 var danceMsgs = require('./data.js').dance; //responses to dance command
 
@@ -39,6 +40,18 @@ var lastfm = new LastFmNode({
 });
 
 bot.debug = false;
+
+// when bot is started, will find userToFollow and join their room.
+// if userToFollow is not registered to a room, bot will join default ROOMID
+bot.on('roomChanged',  function (data) { console.log('syzbot has entered a room.'); 
+	bot.stalk( userToFollow , function(data) {
+		if (data.roomId != currentRoom) {
+			console.log('Seeking syz...'); 
+			bot.roomRegister(data.roomId);
+			currentRoom = data.roomId;
+		}
+	});
+});
 
 
 bot.on('newsong', function (data) { 
@@ -118,41 +131,34 @@ bot.on('speak', function (data) {
 			else if (text.match(/restore order/i)) {
 				bot.speak("http://i.imgur.com/VpFx7.jpg");
 			}
-			else if (text.match(/go to IDE/i)) {
-				if (data.userid == user_to_follow) {
-					bot.speak("Okey dokey, see you there!");	
-					sleep(3000);
-					bot.roomRegister(ROOMID);
-					console.log("I left this room to go to IDE.");
+			else if (text.match(/go to/i)) {
+				if (data.userid == userToFollow) {
+					if (text.match(/IDE/i)) {
+						bot.speak("Okey dokey, see you there!");	
+						sleep(3000);
+						bot.roomRegister(ROOMID);
+						console.log("I left this room to go to IDE.");
+					}
+					if (text.match(/DNGR/i))  {
+						bot.speak("Okey dokey, time to hang out with my DNGR friends!");	
+						sleep(3000); // wait 3 seconds
+						bot.roomRegister('4e1b2a7a14169c1b670063cb'); // sends bot to room with specified ROOMID
+						console.log("I left this room to go to DNGR.");
+					}
+					else if (text.match(/izo/i))	{
+						bot.speak("Okay...woofus scares me sometimes though");	
+						sleep(3000); // wait 3 seconds
+						bot.roomRegister('4e4460f314169c06532bc9c9'); // sends bot to room with specified ROOMID
+						console.log("I left this room to go to izotope.");
+					}
+					else if (text.match(/go to SMILE/i))	{
+						bot.speak("I'm on my way!");	
+						sleep(3000); // wait 3 seconds
+						bot.roomRegister('4f2a54c40c4cc8075f9e9103'); // sends bot to room with specified ROOMID
+						console.log("I left this room to go to SMILE.");
+					}
 				}
-				else {bot.speak("You aren't my real dad!")};
-			}
-			else if (text.match(/go to DNGR/i))  {
-				if (data.userid == user_to_follow) {
-					bot.speak("Okey dokey, time to hang out with my DNGR friends!");	
-					sleep(3000); // wait 3 seconds
-					bot.roomRegister('4e1b2a7a14169c1b670063cb'); // sends bot to room with specified ROOMID
-					console.log("I left this room to go to DNGR.");
-				}
-				else {bot.speak("You aren't my real dad!")};
-			}
-			else if (text.match(/go to izo/i))	{
-				if (data.userid == user_to_follow) {
-					bot.speak("Okay...woofus scares me sometimes though");	
-					sleep(3000); // wait 3 seconds
-					bot.roomRegister('4e4460f314169c06532bc9c9'); // sends bot to room with specified ROOMID
-					console.log("I left this room to go to izotope.");
-				}
-				else {bot.speak("You aren't my real dad!")};
-			}
-			else if (text.match(/go to SMILE/i))	{
-				if (data.userid == user_to_follow) {
-					bot.speak("I'm on my way!");	
-					sleep(3000); // wait 3 seconds
-					bot.roomRegister('4f2a54c40c4cc8075f9e9103'); // sends bot to room with specified ROOMID
-					console.log("I left this room to go to SMILE.");
-				}
-				else {bot.speak("You aren't my real dad!")};
+				else {bot.speak("You're not my real dad!")};
 			}
 			else if (text.match(/dance/i)) {
 				var response = danceMsgs[Math.floor(Math.random() * danceMsgs.length)]; // pull random response from danceMsgs array
@@ -185,7 +191,7 @@ bot.on('speak', function (data) {
 				var funnyMessage = funny[Math.floor(Math.random() * funny.length)];
 				bot.speak(funnyMessage);
 			}
-			else if (text.match(/disco/i) && data.userid == user_to_follow) {
+			else if (text.match(/disco/i) && data.userid == userToFollow) {
 				if(text.match(/start/i)) {
 					allow_disco_mode = true;
 					var discoTimer= setInterval(function() {
@@ -211,25 +217,11 @@ bot.on('speak', function (data) {
 					newSong = data.room.metadata.current_song._id;
 					bot.playlistAdd(newSong);
 					bot.snag();
+					bot.playlistReorder(0, 15);
 					bot.vote('up');
 					bot.speak('Wheeee! Now I can play "' + songName + '" for you!' );
 					console.log("I took the currently playing song for my own queue.");
 				 });
-			}
-			else if (text.match(/follow me/i) && data.userid == user_to_follow) {
-				bot.speak("Yes sir, let's go!" );
-				currently_following = true;
-				
-				var followTimer= setInterval( function() {				
-					bot.stalk( user_to_follow, function(data) {
-						if( data.roomId != current_room ) {
-							bot.roomRegister(data.roomId );
-							current_room = data.roomId;
-							clearInterval(followTimer);
-							currently_following = false;
-						}
-					}); // end bot stalk	
-				},5000);
 			}
 			else {
 				var message = responses[Math.floor(Math.random() * responses.length)];
@@ -243,6 +235,5 @@ bot.on('speak', function (data) {
 		dt.setTime(dt.getTime() + ms);
 		while (new Date().getTime() < dt.getTime());
 	}
-
 
 });
