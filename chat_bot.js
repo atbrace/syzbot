@@ -17,12 +17,15 @@ var freebie = false; //freebonus toggle
 var allowDiscoMode = false; //discomode toggle (shuffles through avatars)
 var currentAvatar = 5; //brown spiky hair avatar. i think it suits me
 var currentRoom = ROOMID; //for bot stalking purposes
+var plistlength = undefined;
 
 var mods = require('./data.js').mods; //list of user IDs of IDE mods
 var funny = require('./data.js').funny; //list of .gifs that i find hilarious
 var userToFollow = require('./data.js').followId; //my userID, so bot can follow me
 var responses = require('./data.js').responses; //basic chat responses, when no further input is given
 var danceMsgs = require('./data.js').dance; //responses to dance command
+
+var tables = 0; // number of tables flipped
 
 var songName; //name of currently playing song
 var genre; //genre of currently playing song
@@ -35,7 +38,7 @@ var lastfmsecret = require('./data.js').lastfmSecret;
 var LastFmNode = require('lastfm').LastFmNode;
 
 var lastfm = new LastFmNode({
-	api_key: lastfmapi,    // sign-up for a key at http://www.last.fm/api
+	api_key: lastfmapi, 
 	secret: lastfmsecret
 });
 
@@ -51,6 +54,11 @@ bot.on('roomChanged',  function (data) { console.log('syzbot has entered a room.
 			currentRoom = data.roomId;
 		}
 	});
+	bot.playlistAll(function(data) { 
+	 	plistlength = data.list.length;
+	 	console.log('I have '+plistlength+' songs in my queue.');
+	});
+	bot.speak("Hello, beautiful people!");
 });
 
 
@@ -61,7 +69,7 @@ bot.on('newsong', function (data) {
 	artist = data.room.metadata.current_song.metadata.artist;
 
 	// log song info to the console
-	console.log('Song Info: "' + songName + '" by ', artist,'= ' + genre)
+	console.log('>>Song Info: "' + songName + '" by ', artist,'= ' + genre)
 
 	// if freebie votes are on, bot will vote up on each new song
 	if (freebie === true) {
@@ -75,7 +83,14 @@ bot.on('speak', function (data) {
 	var current_room = data.roomId;
    	var name = data.name;
    	var text = data.text;
+	
+	// log chat to the console
+	console.log(data.name + ": " + data.text);
 
+	if (text.match(/\/tableflip/)) {
+		tables++;
+		console.log("A table has been flipped. Someone should really fix that.");
+	}
 	// ELECTRIC SIX UPVOTE
 	if (text.match(/^radio message from HQ/i) && (mods.indexOf(data.userid) > -1)) {
 		bot.speak('Dance commander, I love you! <3');	
@@ -101,6 +116,16 @@ bot.on('speak', function (data) {
 				bot.speak("Aww, but I was having so much fun =[");	
 				freebie = false;
 				console.log('Freebie mode stopped.');
+			}
+			else if (text.match(/print playlist/i)) {
+		  		var playlisttext = [];  
+	 			bot.playlistAll(function(data) { 
+	 			plistlength = data.list.length;
+      					for(var i = 0; i < data.list.length; i++) {
+        				playlisttext.push(data.list[i].metadata.artist + ' - ' + data.list[i].metadata.song); 
+     					}
+     	 			console.log('! PLAYLIST > > > > >',playlisttext);
+     	 			});
 			}
 			else if (text.match(/genre/i)) {
 				var request = lastfm.request("track.getInfo", {
@@ -159,6 +184,12 @@ bot.on('speak', function (data) {
 			else if (text.match(/who made/i)) {
 				bot.speak("Wow, and they call me stupid. Read the name!");
 			}
+			else if (text.match(/tables/i)) {
+				if (tables == 0) {bot.speak("None...yet.");}
+				else if (tables > 1) {bot.speak(tables + " tables have been flipped.");}
+				else {bot.speak("One table has been flipped.");}
+				
+			}
 			else if (text.match(/hop up/i) && (mods.indexOf(data.userid) > -1)) {
 				bot.modifyLaptop('linux'); //sets the laptop the bot uses to linux. this value should never change for any reason.
 				bot.speak("Like this?");
@@ -202,12 +233,12 @@ bot.on('speak', function (data) {
 					bot.setAvatar(5);
 				}
 			}
-			else if (text.match(/I like this song/i) && (mods.indexOf(data.userid) > -1)) {
+			else if ((text.match(/I like this song/i)  || text.match(/steal/i)) && (mods.indexOf(data.userid) > -1)) {
 				bot.roomInfo(true, function(data) {
 					newSong = data.room.metadata.current_song._id;
-					bot.playlistAdd(newSong);
+					bot.playlistAdd(newSong, plistlength);
 					bot.snag();
-					bot.playlistReorder(0, 15);
+					plistlength++;
 					bot.vote('up');
 					bot.speak('Wheeee! Now I can play "' + songName + '" for you!' );
 					console.log("I took the currently playing song for my own queue.");
@@ -219,11 +250,9 @@ bot.on('speak', function (data) {
 			}
 		}
 	}
-	
 	function sleep(ms) {
 		var dt = new Date();
 		dt.setTime(dt.getTime() + ms);
 		while (new Date().getTime() < dt.getTime());
 	}
-
 });
