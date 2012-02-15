@@ -14,8 +14,8 @@ repl.start('> ').context.bot = bot;
 
 var currently_following = false; //follow toggle
 var freebie = false; //freebonus toggle
-var allow_disco_mode = false; //discomode toggle (shuffles through avatars)
-var current_avatar = 5; //brown spiky hair avatar. i think it suits me
+var allowDiscoMode = false; //discomode toggle (shuffles through avatars)
+var currentAvatar = 5; //brown spiky hair avatar. i think it suits me
 var currentRoom = ROOMID; //for bot stalking purposes
 
 var mods = require('./data.js').mods; //list of user IDs of IDE mods
@@ -55,7 +55,6 @@ bot.on('roomChanged',  function (data) { console.log('syzbot has entered a room.
 
 
 bot.on('newsong', function (data) { 
-
 	// for every new song, retrieve and store the metadata for console logging and genre 
 	songName = data.room.metadata.current_song.metadata.song;
 	genre = data.room.metadata.current_song.metadata.genre;
@@ -69,15 +68,6 @@ bot.on('newsong', function (data) {
 		bot.vote('up');
 		console.log('auto-awesome');
 	}
-
-/*	// detects if current song is dubstep from metadata. if so, asks to skip and then lames.
-	if(genre.text.match(/dubstep/i)) {
-			bot.speak("Ew, no dubstep in here. Skip please.");
-			sleep(1000);
-			bot.vote('down');
-			console.log('Someone played dubstep, so I lamed them.');
-	}
-*/
 });
 
 bot.on('speak', function (data) {
@@ -151,7 +141,7 @@ bot.on('speak', function (data) {
 						bot.roomRegister('4e4460f314169c06532bc9c9'); // sends bot to room with specified ROOMID
 						console.log("I left this room to go to izotope.");
 					}
-					else if (text.match(/go to SMILE/i))	{
+					else if (text.match(/SMILE/i))	{
 						bot.speak("I'm on my way!");	
 						sleep(3000); // wait 3 seconds
 						bot.roomRegister('4f2a54c40c4cc8075f9e9103'); // sends bot to room with specified ROOMID
@@ -180,7 +170,7 @@ bot.on('speak', function (data) {
 				bot.remDj ();
 				console.log("I stepped down from the decks.");
 			}
-			else if (text.match(/show me the code/i)) {
+			else if (text.match(/code/i)) {
 				bot.speak("Boom, sucka: https://github.com/atbrace/syzbot/blob/master/chat_bot.js");
 			}
 			else if (text.match(/do your thang/i) && (mods.indexOf(data.userid) > -1)) {
@@ -193,22 +183,22 @@ bot.on('speak', function (data) {
 			}
 			else if (text.match(/disco/i) && data.userid == userToFollow) {
 				if(text.match(/start/i)) {
-					allow_disco_mode = true;
+					allowDiscoMode = true;
 					var discoTimer= setInterval(function() {
-						if( !allow_disco_mode ) {
+						if( !allowDiscoMode ) {
 							clearInterval(discoTimer);
 							return;
 						}
-						if( current_avatar < 9 ) {
-							current_avatar++;
+						if( currentAvatar < 9 ) {
+							currentAvatar++;
 						} else {
-							current_avatar = 0;
+							currentAvatar = 0;
 						}
-						bot.setAvatar(current_avatar);
+						bot.setAvatar(currentAvatar);
 					},700);
 				}
 				else if (text.match(/stop/i)){
-					allow_disco_mode = false;
+					allowDiscoMode = false;
 					bot.setAvatar(5);
 				}
 			}
