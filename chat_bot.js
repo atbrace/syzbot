@@ -15,7 +15,8 @@ repl.start('> ').context.bot = bot;
 var currently_following = false; //follow toggle
 var freebie = false; //freebonus toggle
 var allowDiscoMode = false; //discomode toggle (shuffles through avatars)
-var currentAvatar = 5; //brown spiky hair avatar. i think it suits me
+var currentAvatar;
+var jbear = 14; //jellybear = master race
 var currentRoom = ROOMID; //for bot stalking purposes
 var plistlength = undefined;
 
@@ -58,7 +59,6 @@ bot.on('roomChanged',  function (data) { console.log('syzbot has entered a room.
 	 	plistlength = data.list.length;
 	 	console.log('I have '+plistlength+' songs in my queue.');
 	});
-	bot.speak("Hello, beautiful people!");
 });
 
 
@@ -108,7 +108,8 @@ bot.on('speak', function (data) {
 	else if(data.name != 'syzbot' && data.name != '#EVE') {
 		if (text.match(/syzbot/i)) {
 			if (text.match(/engage partymode/i) && (mods.indexOf(data.userid) > -1)) {
-				bot.speak('Wooooohoo!');	
+				bot.speak('Wooooohoo!');
+				bot.bop();
 				freebie = true;
 				console.log('Freebie mode started.');
 			}
@@ -117,31 +118,40 @@ bot.on('speak', function (data) {
 				freebie = false;
 				console.log('Freebie mode stopped.');
 			}
+			else if (text.match(/grounded/i)) {
+				bot.speak("http://i.imgur.com/NdRas.jpg");
+			}
 			else if (text.match(/print playlist/i)) {
 		  		var playlisttext = [];  
 	 			bot.playlistAll(function(data) { 
 	 			plistlength = data.list.length;
-      					for(var i = 0; i < data.list.length; i++) {
+      					for(var i = 0; i < 14; i++) {
         				playlisttext.push(data.list[i].metadata.artist + ' - ' + data.list[i].metadata.song); 
      					}
      	 			console.log('! PLAYLIST > > > > >',playlisttext);
      	 			});
 			}
 			else if (text.match(/genre/i)) {
-				var request = lastfm.request("track.getInfo", {
-					track: songName,
-					artist: artist,
-					handlers: {
-						success: function(data) {
-							console.log("Success: " + data);
-							bot.speak(data.track.toptags.tag[0].name);
-						},
-						error: function(error) {
-							console.log("Error: " + error.message);
-							bot.speak("I don't know, aren't you supposed to be the smart one?");
+				try {
+					bot.speak("This song is " + genre);
+				}
+				catch (err) {
+					console.log("Nothing in TT metadata, trying last.fm.");
+					var request = lastfm.request("track.getInfo", {
+						track: songName,
+						artist: artist,
+						handlers: {
+							success: function(data) {
+								console.log("Success: " + data);
+								bot.speak("This song is " + data.track.toptags.tag[0].name);
+							},
+							error: function(error) {
+								console.log(error.message);
+								bot.speak("Sorry, I wish I could tell you but kids these days don't know how to tag their music.");
+							}
 						}
-					}
-				});
+					});
+				}
 			}
 			else if (text.match(/restore order/i)) {
 				bot.speak("http://i.imgur.com/VpFx7.jpg");
@@ -201,7 +211,7 @@ bot.on('speak', function (data) {
 				bot.remDj ();
 				console.log("I stepped down from the decks.");
 			}
-			else if (text.match(/code/i)) {
+			else if (text.match(/code/i) || text.match(/hood/i)) {
 				bot.speak("Boom, sucka: https://github.com/atbrace/syzbot/blob/master/chat_bot.js");
 			}
 			else if (text.match(/do your thang/i) && (mods.indexOf(data.userid) > -1)) {
@@ -220,13 +230,13 @@ bot.on('speak', function (data) {
 							clearInterval(discoTimer);
 							return;
 						}
-						if( currentAvatar < 9 ) {
+						if( currentAvatar < 19 ) {
 							currentAvatar++;
 						} else {
-							currentAvatar = 0;
+							currentAvatar = 10;
 						}
-						bot.setAvatar(currentAvatar);
-					},700);
+						bot.setAvatar(jbear);
+					},600);
 				}
 				else if (text.match(/stop/i)){
 					allowDiscoMode = false;
