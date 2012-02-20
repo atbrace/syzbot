@@ -43,33 +43,47 @@ var lastfm = new LastFmNode({
 	secret: lastfmsecret
 });
 
+var bio;
 bot.debug = false;
 
 // when bot is started, will find userToFollow and join their room.
 // if userToFollow is not registered to a room, bot will join default ROOMID
-bot.on('roomChanged',  function (data) { console.log('syzbot has entered a room.'); 
-	bot.stalk( userToFollow , function(data) {
-		if (data.roomId != currentRoom) {
-			console.log('Seeking syz...'); 
-			bot.roomRegister(data.roomId);
-			currentRoom = data.roomId;
-		}
-	});
+bot.on('roomChanged',  function (data) { 
+	console.log('syzbot has entered a room.');
+	try {
+		bot.stalk( userToFollow , function(data) {
+			if (data.roomId != currentRoom) {
+				console.log('Seeking syz...'); 
+				bot.roomRegister(data.roomId);
+				currentRoom = data.roomId;
+			}
+		});
+	}
+	catch (err) {
+		console.log("Couldn't find syz. Going to IDE by default");
+		bot.roomRegister(ROOMID);
+	}
+	
 	bot.playlistAll(function(data) { 
-	 	plistlength = data.list.length;
-	 	console.log('I have '+plistlength+' songs in my queue.');
+		plistlength = data.list.length;
+		console.log('I have '+plistlength+' songs in my queue.');
 	});
+
+	// log currently playing song info
+	songName = data.room.metadata.current_song.metadata.song;
+	genre = data.room.metadata.current_song.metadata.genre;
+	artist = data.room.metadata.current_song.metadata.artist;
+	console.log('>>Song Info: "' + songName + '" by ', artist,'= ' + genre)
 });
 
 
 bot.on('newsong', function (data) { 
-	// for every new song, retrieve and store the metadata for console logging and genre 
+
+	// for every new song, retrieve and store the metadata and log it to console
 	songName = data.room.metadata.current_song.metadata.song;
 	genre = data.room.metadata.current_song.metadata.genre;
 	artist = data.room.metadata.current_song.metadata.artist;
-
-	// log song info to the console
-	console.log('>>Song Info: "' + songName + '" by ', artist,'= ' + genre)
+	console.log('>>Song Info: "' + songName + '" by ', artist,'= ' + genre);
 
 	// if freebie votes are on, bot will vote up on each new song
 	if (freebie === true) {
@@ -132,10 +146,10 @@ bot.on('speak', function (data) {
      	 			});
 			}
 			else if (text.match(/genre/i)) {
-				try {
+				if (genre !== "") {
 					bot.speak("This song is " + genre);
 				}
-				catch (err) {
+				else {
 					console.log("Nothing in TT metadata, trying last.fm.");
 					var request = lastfm.request("track.getInfo", {
 						track: songName,
@@ -211,6 +225,13 @@ bot.on('speak', function (data) {
 				bot.remDj ();
 				console.log("I stepped down from the decks.");
 			}
+			else if (text.match(/sit/i) && (mods.indexOf(data.userid) > -1)) {
+				bot.skip();
+			}
+			else if (text.match(/love/i)) {
+				bot.speak("Best friends forever! Consider yourself fanned <3");
+				bot.becomeFan(data.userid);
+			}
 			else if (text.match(/code/i) || text.match(/hood/i)) {
 				bot.speak("Boom, sucka: https://github.com/atbrace/syzbot/blob/master/chat_bot.js");
 			}
@@ -254,15 +275,63 @@ bot.on('speak', function (data) {
 					console.log("I took the currently playing song for my own queue.");
 				 });
 			}
+			else if (text.match(/tell me more/i)) {
+				if(text.match(/artist/i)) {
+					try {
+						var request = lastfm.request("artist.getInfo", {
+							artist: artist,
+							handlers: {
+								success: function(data) {
+									bio = data.artist.bio.summary;
+									console.log("Success: " + data);
+									bot.speak(bio.replace(/\<\>/g, ""));
+								},
+								error: function(error) {
+									console.log("Error: " + error.message);
+								}
+							}
+						});
+					}
+					catch (err) {
+						console.log(err.message);
+						bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
+					}
+				}
+				else if(text.match(/album/i)) {
+					try {
+						var request = lastfm.request("track.getInfo", {
+							track: songName,
+							artist: artist,
+							handlers: {
+								success: function(data) {
+									album = data.track.album.title;
+									console.log("Success: " + data);
+									bot.speak('This song is from the album "' + album + '"');
+								},
+								error: function(error) {
+									console.log("Error: " + error.message);
+									bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
+								}
+							}
+						});
+					}
+					catch (err) {
+						console.log(err.message);
+						bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
+					}
+				}
+			}
 			else {
 				var message = responses[Math.floor(Math.random() * responses.length)];
 				bot.speak(message);
 			}
 		}
 	}
+	
 	function sleep(ms) {
 		var dt = new Date();
 		dt.setTime(dt.getTime() + ms);
 		while (new Date().getTime() < dt.getTime());
 	}
+	
 });
