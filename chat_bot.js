@@ -93,6 +93,20 @@ bot.on('newsong', function (data) {
 });
 
 bot.on('speak', function (data) {
+var matches = data.text.match(/^(syzbot)(\w+)\s*(.*)/);
+	if (matches) {
+		var command = matches[1];
+		var args = matches[2];
+		if (command == "playnext") && (data.userid == userToFollow) {
+			var n = parseInt(args);
+			bot.playlistReorder(n, 0);
+			console.log("Moved song "+n+" to top.");
+			//can add bot speak name of song you will play next or something here
+		}
+	}
+});
+
+bot.on('speak', function (data) {
 
 	var current_room = data.roomId;
    	var name = data.name;
@@ -148,7 +162,7 @@ bot.on('speak', function (data) {
 	 			bot.playlistAll(function(data) { 
 	 			plistlength = data.list.length;
       					for(var i = 0; i < 14; i++) {
-        				playlisttext.push(data.list[i].metadata.artist + ' - ' + data.list[i].metadata.song); 
+        				playlisttext.push(i+". "+data.list[i].metadata.artist + ' - ' + data.list[i].metadata.song); 
      					}
      	 			console.log('! PLAYLIST > > > > >',playlisttext);
      	 			});
