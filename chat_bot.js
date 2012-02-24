@@ -13,7 +13,6 @@ var bot = new Bot(AUTH, USERID, ROOMID);
 repl.start('> ').context.bot = bot;
 
 var currently_following = false; //follow toggle
-var freebie = false; //freebonus toggle
 var allowDiscoMode = false; //discomode toggle (shuffles through avatars)
 var currentAvatar;
 var jbear = 14; //jellybear = master race
@@ -27,11 +26,14 @@ var responses = require('./data.js').responses; //basic chat responses, when no 
 var danceMsgs = require('./data.js').dance; //responses to dance command
 
 var tables = 0; // number of tables flipped
+var pmSender;
 
 var songName; //name of currently playing song
 var genre; //genre of currently playing song
 var artist; //artist of currently playing song
 var newSong; //ID of currently playing song
+var albumName; //name of album
+var albumDate; //date album was released
 
 var lastfmapi = require('./data.js').lastfmApi;
 var lastfmsecret = require('./data.js').lastfmSecret;
@@ -49,18 +51,25 @@ bot.debug = false;
 // when bot is started, will find userToFollow and join their room.
 // if userToFollow is not registered to a room, bot will join default ROOMID
 bot.on('roomChanged',  function (data) { 
-	console.log('syzbot has entered a room.');
 	try {
-		bot.stalk( userToFollow , function(data) {
-			if (data.roomId != currentRoom) {
-				console.log('Seeking syz...'); 
-				bot.roomRegister(data.roomId);
-				currentRoom = data.roomId;
-			}
-		});
+		if (currently_following === true) {
+			bot.stalk( userToFollow , function(data) {
+				console.log( 'seeking syz');
+				if (data.roomId != current_room) {
+					if (data.roomId === undefined) {
+						console.log('no syz');
+					}
+					else { 
+						console.log( 'Going to syz' ); 
+						bot.roomRegister(data.roomId);
+						current_room = data.roomId;
+					}
+				}
+			});
+		}
 	}
 	catch (err) {
-		console.log("Couldn't find syz. Going to IDE by default");
+		console.log("Couldn't find syz. Going to ID by default");
 		bot.roomRegister(ROOMID);
 	}
 	
@@ -78,18 +87,22 @@ bot.on('roomChanged',  function (data) {
 
 
 bot.on('newsong', function (data) { 
-
 	// for every new song, retrieve and store the metadata and log it to console
 	songName = data.room.metadata.current_song.metadata.song;
 	genre = data.room.metadata.current_song.metadata.genre;
 	artist = data.room.metadata.current_song.metadata.artist;
-	console.log('>>Song Info: "' + songName + '" by ', artist,'= ' + genre);
+	console.log('>>Song Info: "' + songName + '" by ', artist,' = ' + genre);
+});
 
-	// if freebie votes are on, bot will vote up on each new song
-	if (freebie === true) {
-		bot.vote('up');
-		console.log('auto-awesome');
-	}
+bot.on('registered', function (data) {
+	console.log(data.name + " has entered the room.");
+	if (data.user[0].name == "elektrofried") {bot.speak("<3 elektrofried <3");}
+});
+
+bot.on('pmmed', function (data) {
+	pmSender = data.senderid;
+	bot.pm(" <3 <3 <3 ", pmSender);
+	console.log(data.senderid + " just sent me a PM. I'll send them some hearts.");
 });
 
 bot.on('speak', function (data) {
@@ -99,17 +112,7 @@ bot.on('speak', function (data) {
    	var text = data.text;
 	
 	// log chat to the console
-	console.log(data.name + ": " + data.text);
-
-	if (text.match(/\/tableflip/)) {
-		tables++;
-		console.log("A table has been flipped. Someone should really fix that.");
-	}
-	else if (text.match(/^radio message from HQ/i) && (mods.indexOf(data.userid) > -1)) {
-		bot.speak('Dance commander, I love you! <3');	
-		bot.vote('up');
-		console.log('The dance commander told me to vote this up!');
-	}
+	console.log(data.name + " (" + data.userid + "): " + data.text);
 	
 	// handle input
 	if(data.name == '#EVE') {
@@ -122,25 +125,23 @@ bot.on('speak', function (data) {
 		if (text.match(/\bbro\b/)) {
 			bot.speak("BRO");
 		}
+		else if (text.match(/\/tableflip/)) {
+			tables++;
+			console.log("A table has been flipped. Someone should really fix that.");
+		}
+		else if (text.match(/^radio message from HQ/i) && (mods.indexOf(data.userid) > -1)) {
+			bot.speak('Dance commander, I love you! <3');	
+			bot.vote('up');
+			console.log('The dance commander told me to vote this up!');
+		}
 		else if (text.match(/good boy/i)) {
 			bot.speak(":D");
 		}
-		else if (text.match(/dubstep/i) && (text.match(/play/i) || text.match(/cool/i) || text.match(/ok/i) || text.match(/like/i))) {
-			bot.speak("Sorry bro, no dubstep in here. Please read the room rules.");
+		else if (text.match(/dubstep/i) && (text.match(/play/i) || text.match(/cool/i) || text.match(/ok/i) || text.match(/like/i) || text.match(/allowed/i))) {
+			bot.speak("S#442A2Aorry bro, no dubstep in here. Please read the room rules.");
 		}
 		else if (text.match(/syzbot/i)) {
-			if (text.match(/engage partymode/i) && (mods.indexOf(data.userid) > -1)) {
-				bot.speak('Wooooohoo!');
-				bot.bop();
-				freebie = true;
-				console.log('Freebie mode started.');
-			}
-			else if (text.match(/stop the party/i) && (mods.indexOf(data.userid) > -1)) {
-				bot.speak("Aww, but I was having so much fun =[");	
-				freebie = false;
-				console.log('Freebie mode stopped.');
-			}
-			else if (text.match(/grounded/i)) {
+			if (text.match(/grounded/i)) {
 				bot.speak("http://i.imgur.com/NdRas.jpg");
 			}
 			else if (text.match(/print playlist/i)) {
@@ -307,18 +308,44 @@ bot.on('speak', function (data) {
 				}
 				else if(text.match(/album/i)) {
 					try {
-						var request = lastfm.request("track.getInfo", {
+						var nameRequest = lastfm.request("track.getInfo", {
 							track: songName,
 							artist: artist,
 							handlers: {
 								success: function(data) {
-									album = data.track.album.title;
-									console.log("Success: " + data);
-									bot.speak('This song is from the album "' + album + '"');
+									albumName = data.track.album.title;
+									console.log("Album Name Success: " + data);
 								},
 								error: function(error) {
-									console.log("Error: " + error.message);
+									console.log("Album Name Error: " + error.message);
+									albumName = "";
 									bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
+								}
+							}
+						});
+						var dateRequest = lastfm.request("album.getInfo", {
+							album: albumName,
+							artist: artist,
+							autocorrect: 1,
+							handlers: {
+								success: function(data) {
+									albumDate = data.album.releasedate;
+									console.log("Album Date Success: " + data);
+									if (albumName != "") {
+										console.log('This song is from the album "' + albumName + '", released ' + albumDate);
+									}
+									else {
+										bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
+									}
+								},
+								error: function(error) {
+									console.log("Album Date Error: " + error.message);
+									if (albumName = "") {
+										bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
+									}
+									else {
+										console.log('This song is from the album "' + albumName + '"');
+									}
 								}
 							}
 						});
@@ -349,6 +376,5 @@ bot.on('speak', function (data) {
 		return input.replace(commentsAndPhpTags, '').replace(tags, function ($0, $1) {
 			return allowed.indexOf('<' + $1.toLowerCase() + '>') > -1 ? $0 : '';
 		});
-}
-	
+	}
 });
