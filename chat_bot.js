@@ -12,7 +12,7 @@ var bot = new Bot(AUTH, USERID, ROOMID);
 // enables REPL which allows interactive console control over bot
 repl.start('> ').context.bot = bot;
 
-var currently_following = false; //follow toggle
+var currently_following = true; //follow toggle
 var freebie = false; //freebonus toggle
 var allowDiscoMode = false; //discomode toggle (shuffles through avatars)
 var currentAvatar;
@@ -46,24 +46,21 @@ var lastfm = new LastFmNode({
 var bio;
 bot.debug = false;
 
-// when bot is started, will find userToFollow and join their room.
-// if userToFollow is not registered to a room, bot will join default ROOMID
 bot.on('roomChanged',  function (data) { 
-	console.log('syzbot has entered a room.');
-	try {
-		bot.stalk( userToFollow , function(data) {
+	console.log('syzbot has entered '+data.room.name_lower);
+	if (currently_following == true) {
+		bot.stalk( '4e1b54174fe7d0313f05781e', function(data) {
 			if (data.roomId != currentRoom) {
-				console.log('Seeking syz...'); 
+				if (data.roomId === undefined) {
+				console.log('no syz');
+				} else { 
+				console.log( 'Going to my daddy' ); 
 				bot.roomRegister(data.roomId);
 				currentRoom = data.roomId;
+				}
 			}
 		});
-	}
-	catch (err) {
-		console.log("Couldn't find syz. Going to IDE by default");
-		bot.roomRegister(ROOMID);
-	}
-	
+	}	
 	bot.playlistAll(function(data) { 
 		plistlength = data.list.length;
 		console.log('I have '+plistlength+' songs in my queue.');
@@ -92,12 +89,30 @@ bot.on('newsong', function (data) {
 	}
 });
 
+bot.on('deregistered', function (data) {
+   		if (data.user[0].userid == userToFollow && currently_following === true) {
+   			console.log('syz left...'); 
+   			setTimeout(function () {
+				bot.stalk( '4e1b54174fe7d0313f05781e', function(data) {
+					console.log( '...looking for daddy');
+					if (data.roomId != currentRoom) {
+						if (data.roomId === undefined) {console.log('no syz, staying here');
+						} else { console.log( 'Following syz' ); 
+						bot.roomRegister(data.roomId);
+						currentRoom = data.roomId;
+						}
+					}
+				});
+			},1000 *20);
+		}
+});
+
 bot.on('speak', function (data) {
-var matches = data.text.match(/^(syzbot)(\w+)\s*(.*)/);
+var matches = data.text.match(/^syzbot(\w+)\s*(.*)/);
 	if (matches) {
 		var command = matches[1];
 		var args = matches[2];
-		if (command == "playnext") && (data.userid == userToFollow) {
+		if (command == "addtotop") {
 			var n = parseInt(args);
 			bot.playlistReorder(n, 0);
 			console.log("Moved song "+n+" to top.");
@@ -192,6 +207,9 @@ bot.on('speak', function (data) {
 			else if (text.match(/restore order/i)) {
 				bot.speak("http://i.imgur.com/VpFx7.jpg");
 			}
+			else if (text.match(/follow me/i) && data.userid == userToFollow) {
+				if (currently_following == true) {currently_following = false; bot.speak('I wanna hang here dad!');}
+				else {currently_following = true; bot.speak('/me holds syz hand.')}
 			else if (text.match(/go to/i)) {
 				if (data.userid == userToFollow) {
 					if (text.match(/IDE/i)) {
