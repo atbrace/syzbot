@@ -15,7 +15,7 @@ repl.start('> ').context.bot = bot;
 var currently_following = true; //follow toggle
 var freebie = false; //freebonus toggle
 var allowDiscoMode = false; //discomode toggle (shuffles through avatars)
-var currentAvatar;
+var currentAvatar = 0;
 var jbear = 14; //jellybear = master race
 var currentRoom = ROOMID; //for bot stalking purposes
 var plistlength = undefined;
@@ -296,12 +296,12 @@ bot.on('speak', function (data) {
 						} else {
 							currentAvatar = 10;
 						}
-						bot.setAvatar(jbear);
+						bot.setAvatar(currentAvatar);
 					},600);
 				}
 				else if (text.match(/stop/i)){
 					allowDiscoMode = false;
-					bot.setAvatar(5);
+					bot.setAvatar(jbear);
 				}
 			}
 			else if ((text.match(/I like this song/i)  || text.match(/steal/i)) && (mods.indexOf(data.userid) > -1)) {
