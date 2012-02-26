@@ -12,7 +12,7 @@ var bot = new Bot(AUTH, USERID, ROOMID);
 // enables REPL which allows interactive console control over bot
 repl.start('> ').context.bot = bot;
 
-var currently_following = true; //follow toggle
+var currentlyFollowing = true; //follow toggle
 var freebie = false; //freebonus toggle
 var allowDiscoMode = false; //discomode toggle (shuffles through avatars)
 var currentAvatar = 0;
@@ -48,7 +48,7 @@ bot.debug = false;
 
 bot.on('roomChanged',  function (data) { 
 	console.log('syzbot has entered '+data.room.name_lower);
-	if (currently_following == true) {
+	if (currentlyFollowing == true) {
 		bot.stalk( '4e1b54174fe7d0313f05781e', function(data) {
 			if (data.roomId != currentRoom) {
 				if (data.roomId === undefined) {
@@ -90,7 +90,7 @@ bot.on('newsong', function (data) {
 });
 
 bot.on('deregistered', function (data) {
-   		if (data.user[0].userid == userToFollow && currently_following === true) {
+   		if (data.user[0].userid == userToFollow && currentlyFollowing === true) {
    			console.log('syz left...'); 
    			setTimeout(function () {
 				bot.stalk( '4e1b54174fe7d0313f05781e', function(data) {
@@ -208,8 +208,8 @@ bot.on('speak', function (data) {
 				bot.speak("http://i.imgur.com/VpFx7.jpg");
 			}
 			else if (text.match(/follow me/i) && data.userid == userToFollow) {
-				if (currently_following == true) {currently_following = false; bot.speak('I wanna hang here dad!');}
-				else {currently_following = true; bot.speak('/me holds syz hand.')}
+				if (currentlyFollowing == true) {currentlyFollowing = false; bot.speak('I wanna hang here dad!');}
+				else {currentlyFollowing = true; bot.speak('/me holds syz hand.')}
 			else if (text.match(/go to/i)) {
 				if (data.userid == userToFollow) {
 					if (text.match(/IDE/i)) {
