@@ -1,20 +1,23 @@
-//bot requires node.js and the turntable API by alain gilbert
-// data.js file in same directory exports data to this file. keeps things tidy, and keeps auth off of github
+// bot requires node.js + turntable.fm API by alain gilbert
+// last.fm interaction requires a last.fm API key and lastfm node module
+// mongoDB obviously requires mongoDB and the mongoDB node module 
+// data.js file in same directory as bot exports data to this file. keeps things tidy, and keeps auth off of github
 
 var Bot    = require('ttapi');
 var AUTH   = require('./data.js').auth; //authID of bot from turntable cookie (ctrl+shift+J in chrome)
 var USERID = require('./data.js').userid; //userID of bot from turntable cookie (ctrl+shift+J in chrome)
 var ROOMID = require('./data.js').roomid; //roomID of bot starting room from room's page source
 var repl = require('repl');
+var mongo = require('mongodb');
 
 var bot = new Bot(AUTH, USERID, ROOMID);
 
 // enables REPL which allows interactive console control over bot
 repl.start('> ').context.bot = bot;
 
-var currently_following = false; //follow toggle
+var currentlyFollowing = false; //follow toggle
 var allowDiscoMode = false; //discomode toggle (shuffles through avatars)
-var currentAvatar;
+var currentAvatar = 14;
 var jbear = 14; //jellybear = master race
 var currentRoom = ROOMID; //for bot stalking purposes
 var plistlength = undefined;
@@ -26,7 +29,10 @@ var responses = require('./data.js').responses; //basic chat responses, when no 
 var danceMsgs = require('./data.js').dance; //responses to dance command
 
 var tables = 0; // number of tables flipped
-var pmSender;
+var userList = { }; // list of all users in room
+var djList = { }; // list of DJs on decks
+var pmSender; // userID of person who sent a PM to bot
+var snags = 0; // number of heartfarts per song
 
 var songName; //name of currently playing song
 var genre; //genre of currently playing song
@@ -34,6 +40,7 @@ var artist; //artist of currently playing song
 var newSong; //ID of currently playing song
 var albumName; //name of album
 var albumDate; //date album was released
+var bio; // bio of artist
 
 var lastfmapi = require('./data.js').lastfmApi;
 var lastfmsecret = require('./data.js').lastfmSecret;
@@ -45,83 +52,159 @@ var lastfm = new LastFmNode({
 	secret: lastfmsecret
 });
 
-var bio;
 bot.debug = false;
 
 // when bot is started, will find userToFollow and join their room.
 // if userToFollow is not registered to a room, bot will join default ROOMID
-bot.on('roomChanged',  function (data) { 
-	try {
-		if (currently_following === true) {
+bot.on('roomChanged',  function (data) {
+	snags = 0;
+	userList = { };
+	console.log('syzbot has entered ' + data.room.name_lower);
+	if (currentlyFollowing === true) {
 			bot.stalk( userToFollow , function(data) {
-				console.log( 'seeking syz');
-				if (data.roomId != current_room) {
+				if (data.roomId != currentRoom) {
 					if (data.roomId === undefined) {
 						console.log('no syz');
 					}
 					else { 
 						console.log( 'Going to syz' ); 
 						bot.roomRegister(data.roomId);
-						current_room = data.roomId;
+						currentRoom = data.roomId;
 					}
 				}
 			});
-		}
 	}
-	catch (err) {
-		console.log("Couldn't find syz. Going to ID by default");
-		bot.roomRegister(ROOMID);
+	var users = data.users;
+	for (var i=0; i<users.length; i++) {
+		var user = users[i];
+		user.lastActivity = new Date();
+		userList[user.userid] = user;
 	}
 	
 	bot.playlistAll(function(data) { 
 		plistlength = data.list.length;
-		console.log('I have '+plistlength+' songs in my queue.');
+		console.log('I have '+plistlength+' songs in my queue.\n-----------------------------');
 	});
 
 	// log currently playing song info
 	songName = data.room.metadata.current_song.metadata.song;
 	genre = data.room.metadata.current_song.metadata.genre;
 	artist = data.room.metadata.current_song.metadata.artist;
-	console.log('>>Song Info: "' + songName + '" by ', artist,'= ' + genre)
+	console.log('>>SONG INFO: "' + songName + '" by ', artist,'= ' + genre)
 });
 
 
-bot.on('newsong', function (data) { 
+bot.on('newsong', function (data) {
+	console.log(snags + " users stole the last song for their queue.");
+	snags = 0;
+	
 	// for every new song, retrieve and store the metadata and log it to console
 	songName = data.room.metadata.current_song.metadata.song;
 	genre = data.room.metadata.current_song.metadata.genre;
 	artist = data.room.metadata.current_song.metadata.artist;
-	console.log('>>Song Info: "' + songName + '" by ', artist,' = ' + genre);
+	console.log('>>SONG INFO: "' + songName + '" by ', artist,' = ' + genre);
 });
 
 bot.on('registered', function (data) {
-	console.log(data.name + " has entered the room.");
-	if (data.user[0].name == "elektrofried") {bot.speak("<3 elektrofried <3");}
+	var user = data.user[0];
+	user.lastActivity = new Date();
+	userList[user.userid] = user;
+	console.log(user.name + " has entered the room.");
+	if (user.name == "elektrofried") {bot.speak("<3 elektrofried <3");}
+});
+
+bot.on('deregistered', function (data) {
+	var user = data.user[0]; 
+	if (user.userid == userToFollow && currentlyFollowing === true) {
+		setTimeout(function () {
+			bot.stalk( userToFollow, function(data) {
+				console.log( '...looking for daddy');
+				if (data.roomId != currentRoom) {
+					if (data.roomId === undefined) {
+						console.log('no syz, staying here');
+					} 
+					else {					
+						console.log( 'Following syz' ); 
+						bot.roomRegister(data.roomId);
+						currentRoom = data.roomId;
+					}
+				}
+			});
+		},1000 *20);
+	}
+	console.log(user.name + " left the room.");
+	delete userList[user.userid];
+});
+
+/*bot.on('update_votes', function (data) {
+   var votelog = data.room.metadata.votelog;
+   for (var i=0; i<votelog.length; i++) {
+      var userid = votelog[i][0];
+      userList[userid].lastActivity = new Date();
+   }
+});*/
+
+bot.on('add_dj', function (data) {
+   var user = data.user[0];
+   userList[user.userid].lastActivity = new Date();
+   djList
+});
+
+bot.on('rem_dj', function (data) {
+   var user = data.user[0];
+   userList[user.userid].lastActivity = new Date();
+});
+
+bot.on('snagged', function (data) {
+   var userid = data.userid;
+   userList[userid].lastActivity = new Date();
+   snags++;
 });
 
 bot.on('pmmed', function (data) {
 	pmSender = data.senderid;
-	bot.pm(" <3 <3 <3 ", pmSender);
-	console.log(data.senderid + " just sent me a PM. I'll send them some hearts.");
+	if ((data.text.match(/printlist/i)) && (mods.indexOf(pmSender) > -1)) {
+		var playlisttext = [];  
+		bot.playlistAll(function(data) { 
+			plistlength = data.list.length;
+				for(var i = 1; i < 11; i++) {
+					playlisttext.push(i + ". " + data.list[i].metadata.artist + ' - ' + data.list[i].metadata.song + "\n"); 
+				}
+			bot.pm("! PLAYLIST > > > > >" + playlisttext, pmSender);
+		});
+	}
+	else if (data.text.match(/help/i)) {
+		if(mods.indexOf(pmSender) > -1) {
+			bot.pm("Just say my name plus any of these keywords: genre, make me laugh, tables, tell me more artist, "
+			+ "do your thang, hop up, sit, steal", pmSender);
+		}
+		else {
+			bot.pm("Just say my name plus any of these keywords: genre, make me laugh, tables, tell me more artist", pmSender);
+		}
+	}
 });
 
 bot.on('speak', function (data) {
 
-	var current_room = data.roomId;
-   	var name = data.name;
-   	var text = data.text;
+	// refresh user's AFK timer
+	userList[data.userid].lastActivity = new Date();
+
+	var currentRoom = data.roomId;
+	var name = data.name;
+	var text = data.text;
+	var speakerId = data.userid
 	
 	// log chat to the console
-	console.log(data.name + " (" + data.userid + "): " + data.text);
+	console.log(data.name + " (" + speakerId + "): " + data.text);
 	
 	// handle input
-	if(data.name == '#EVE') {
-		if (text.match(/^syzbot/i) && text.match(/it's your turn!. you have 30 seconds to step up!/i)) {
+	if(data.name == '#JARVIS') {
+		if (text.match(/^syzbot/i) && text.match(/your turn/i)) {
 			bot.addDj();
 			console.log("Stepped up to the decks");
 		}
 	}
-	else if(data.name != 'syzbot' && data.name != '#EVE') {
+	else if((data.name != 'syzbot') && (data.name != '#WEEBO') && (data.name != '#JARVIS')) {
 		if (text.match(/\bbro\b/)) {
 			bot.speak("BRO");
 		}
@@ -129,7 +212,7 @@ bot.on('speak', function (data) {
 			tables++;
 			console.log("A table has been flipped. Someone should really fix that.");
 		}
-		else if (text.match(/^radio message from HQ/i) && (mods.indexOf(data.userid) > -1)) {
+		else if (text.match(/^radio message from HQ/i) && (mods.indexOf(speakerId) > -1)) {
 			bot.speak('Dance commander, I love you! <3');	
 			bot.vote('up');
 			console.log('The dance commander told me to vote this up!');
@@ -138,21 +221,11 @@ bot.on('speak', function (data) {
 			bot.speak(":D");
 		}
 		else if (text.match(/dubstep/i) && (text.match(/play/i) || text.match(/cool/i) || text.match(/ok/i) || text.match(/like/i) || text.match(/allowed/i))) {
-			bot.speak("S#442A2Aorry bro, no dubstep in here. Please read the room rules.");
+			bot.speak("Sorry bro, no dubstep in here. Please read the room rules.");
 		}
 		else if (text.match(/syzbot/i)) {
 			if (text.match(/grounded/i)) {
 				bot.speak("http://i.imgur.com/NdRas.jpg");
-			}
-			else if (text.match(/print playlist/i)) {
-		  		var playlisttext = [];  
-	 			bot.playlistAll(function(data) { 
-	 			plistlength = data.list.length;
-      					for(var i = 0; i < 14; i++) {
-        				playlisttext.push(data.list[i].metadata.artist + ' - ' + data.list[i].metadata.song); 
-     					}
-     	 			console.log('! PLAYLIST > > > > >',playlisttext);
-     	 			});
 			}
 			else if (text.match(/genre/i)) {
 				if (genre !== "") {
@@ -208,12 +281,12 @@ bot.on('speak', function (data) {
 				}
 				else {bot.speak("You're not my real dad!")};
 			}
-			else if (text.match(/dance/i)) {
+			/*else if (text.match(/dance/i)) {
 				var response = danceMsgs[Math.floor(Math.random() * danceMsgs.length)]; // pull random response from danceMsgs array
 				bot.speak(response);
 				bot.vote('up');
 				console.log('Someone thinks I should be dancing, I guess I can do that.');
-			}
+			}*/
 			else if (text.match(/who made/i)) {
 				bot.speak("Wow, and they call me stupid. Read the name!");
 			}
@@ -223,7 +296,11 @@ bot.on('speak', function (data) {
 				else {bot.speak("One table has been flipped.");}
 				
 			}
-			else if (text.match(/hop up/i) && (mods.indexOf(data.userid) > -1)) {
+			else if (text.match(/follow me/i) && (speakerId == userToFollow)) {
+				console.log("syz wants me to follow him");
+				currentlyFollowing === true;
+			}
+			else if (text.match(/hop up/i) && (mods.indexOf(speakerId) > -1)) {
 				bot.modifyLaptop('linux'); //sets the laptop the bot uses to linux. this value should never change for any reason.
 				bot.speak("Like this?");
 				bot.addDj();
@@ -234,7 +311,7 @@ bot.on('speak', function (data) {
 				bot.remDj ();
 				console.log("I stepped down from the decks.");
 			}
-			else if (text.match(/sit/i) && (mods.indexOf(data.userid) > -1)) {
+			else if (text.match(/skip/i) && (mods.indexOf(speakerId) > -1)) {
 				bot.skip();
 			}
 			else if (text.match(/love/i)) {
@@ -252,7 +329,7 @@ bot.on('speak', function (data) {
 				var funnyMessage = funny[Math.floor(Math.random() * funny.length)];
 				bot.speak(funnyMessage);
 			}
-			else if (text.match(/disco/i) && data.userid == userToFollow) {
+			else if (text.match(/disco/i) && speakerId == userToFollow) {
 				if(text.match(/start/i)) {
 					allowDiscoMode = true;
 					var discoTimer= setInterval(function() {
@@ -273,7 +350,7 @@ bot.on('speak', function (data) {
 					bot.setAvatar(5);
 				}
 			}
-			else if ((text.match(/I like this song/i)  || text.match(/steal/i)) && (mods.indexOf(data.userid) > -1)) {
+			else if ((text.match(/I like this song/i)  || text.match(/steal/i)) && (mods.indexOf(speakerId) > -1)) {
 				bot.roomInfo(true, function(data) {
 					newSong = data.room.metadata.current_song._id;
 					bot.playlistAdd(newSong, plistlength);
@@ -293,7 +370,8 @@ bot.on('speak', function (data) {
 								success: function(data) {
 									bio = data.artist.bio.summary;
 									console.log("Success: " + data);
-									bot.speak(strip_tags(bio));
+									bot.pm(strip_tags(bio), speakerId);
+									bot.speak("Sent a PM to you");
 								},
 								error: function(error) {
 									console.log("Error: " + error.message);
