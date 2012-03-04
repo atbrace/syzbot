@@ -27,10 +27,13 @@ var funny = require('./data.js').funny; //list of .gifs that i find hilarious
 var userToFollow = require('./data.js').followId; //my userID, so bot can follow me
 var responses = require('./data.js').responses; //basic chat responses, when no further input is given
 var danceMsgs = require('./data.js').dance; //responses to dance command
+var catFact = require('./data.js').catFact;
+var cutePM = require('./data.js').cute;
 
 var tables = 0; // number of tables flipped
 var userList = { }; // list of all users in room
-var djList = { }; // list of DJs on decks
+var lastSeen = { }
+	, djList = [ ]; // list of DJs on decks
 var pmSender; // userID of person who sent a PM to bot
 var snags = 0; // number of heartfarts per song
 
@@ -59,9 +62,9 @@ bot.debug = false;
 bot.on('roomChanged',  function (data) {
 	snags = 0;
 	userList = { };
+	djList = data.room.metadata.djs;
 	console.log('syzbot has entered ' + data.room.name_lower);
-	if (currentlyFollowing === true) {
-			bot.stalk( userToFollow , function(data) {
+	bot.stalk( userToFollow , function(data) {
 				if (data.roomId != currentRoom) {
 					if (data.roomId === undefined) {
 						console.log('no syz');
@@ -72,8 +75,8 @@ bot.on('roomChanged',  function (data) {
 						currentRoom = data.roomId;
 					}
 				}
-			});
-	}
+	});
+	
 	var users = data.users;
 	for (var i=0; i<users.length; i++) {
 		var user = users[i];
@@ -87,15 +90,23 @@ bot.on('roomChanged',  function (data) {
 	});
 
 	// log currently playing song info
-	songName = data.room.metadata.current_song.metadata.song;
-	genre = data.room.metadata.current_song.metadata.genre;
-	artist = data.room.metadata.current_song.metadata.artist;
-	console.log('>>SONG INFO: "' + songName + '" by ', artist,'= ' + genre)
+	try {
+		songName = data.room.metadata.current_song.metadata.song;
+		genre = data.room.metadata.current_song.metadata.genre;
+		artist = data.room.metadata.current_song.metadata.artist;
+		console.log('>>SONG INFO: "' + songName + '" by ', artist,'= ' + genre)
+	}
+	catch (err) {
+		console.log("No song currently playing. Why would you send me here?");
+	}
 });
 
 
 bot.on('newsong', function (data) {
-	console.log(snags + " users stole the last song for their queue.");
+	if (snags > 0) {
+		console.log(snags + " users took the last song for their queue.");
+		bot.speak(snags + " users took the last song for their queue.");
+	}
 	snags = 0;
 	
 	// for every new song, retrieve and store the metadata and log it to console
@@ -110,12 +121,16 @@ bot.on('registered', function (data) {
 	user.lastActivity = new Date();
 	userList[user.userid] = user;
 	console.log(user.name + " has entered the room.");
-	if (user.name == "elektrofried") {bot.speak("<3 elektrofried <3");}
+	if (user.name == "elektrofried") {
+		var elektroPM = cutePM[Math.floor(Math.random() * cutePM.length)]
+		bot.pm(elektroPM, user.userid);
+	}
 });
 
 bot.on('deregistered', function (data) {
 	var user = data.user[0]; 
 	if (user.userid == userToFollow && currentlyFollowing === true) {
+		console.log('syz left...');
 		setTimeout(function () {
 			bot.stalk( userToFollow, function(data) {
 				console.log( '...looking for daddy');
@@ -133,26 +148,21 @@ bot.on('deregistered', function (data) {
 		},1000 *20);
 	}
 	console.log(user.name + " left the room.");
+	
+	//remove user who de-registered from the userlist
 	delete userList[user.userid];
 });
-
-/*bot.on('update_votes', function (data) {
-   var votelog = data.room.metadata.votelog;
-   for (var i=0; i<votelog.length; i++) {
-      var userid = votelog[i][0];
-      userList[userid].lastActivity = new Date();
-   }
-});*/
 
 bot.on('add_dj', function (data) {
    var user = data.user[0];
    userList[user.userid].lastActivity = new Date();
-   djList
+   djList.push(user.userid);
 });
 
 bot.on('rem_dj', function (data) {
    var user = data.user[0];
    userList[user.userid].lastActivity = new Date();
+   djList.splice(djList.indexOf(user.userid), 1);
 });
 
 bot.on('snagged', function (data) {
@@ -167,8 +177,8 @@ bot.on('pmmed', function (data) {
 		var playlisttext = [];  
 		bot.playlistAll(function(data) { 
 			plistlength = data.list.length;
-				for(var i = 1; i < 11; i++) {
-					playlisttext.push(i + ". " + data.list[i].metadata.artist + ' - ' + data.list[i].metadata.song + "\n"); 
+				for(var i = 0; i < 10; i++) {
+					playlisttext.push((i+1) + ". " + data.list[i].metadata.artist + ' - ' + data.list[i].metadata.song + "\n"); 
 				}
 			bot.pm("! PLAYLIST > > > > >" + playlisttext, pmSender);
 		});
@@ -298,7 +308,14 @@ bot.on('speak', function (data) {
 			}
 			else if (text.match(/follow me/i) && (speakerId == userToFollow)) {
 				console.log("syz wants me to follow him");
-				currentlyFollowing === true;
+				if (currentlyFollowing == true) {
+					currentlyFollowing = false;
+					bot.speak('I wanna hang here dad!');
+				}	
+				else {
+					currentlyFollowing = true; 
+					bot.speak('/me holds syz hand.');
+				}
 			}
 			else if (text.match(/hop up/i) && (mods.indexOf(speakerId) > -1)) {
 				bot.modifyLaptop('linux'); //sets the laptop the bot uses to linux. this value should never change for any reason.
@@ -339,15 +356,16 @@ bot.on('speak', function (data) {
 						}
 						if( currentAvatar < 19 ) {
 							currentAvatar++;
-						} else {
+						} 
+						else {
 							currentAvatar = 10;
 						}
-						bot.setAvatar(jbear);
+						bot.setAvatar(currentAvatar);
 					},600);
 				}
 				else if (text.match(/stop/i)){
 					allowDiscoMode = false;
-					bot.setAvatar(5);
+					bot.setAvatar(jbear);
 				}
 			}
 			else if ((text.match(/I like this song/i)  || text.match(/steal/i)) && (mods.indexOf(speakerId) > -1)) {
@@ -384,7 +402,7 @@ bot.on('speak', function (data) {
 						bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
 					}
 				}
-				else if(text.match(/album/i)) {
+				/*else if(text.match(/album/i)) {
 					try {
 						var nameRequest = lastfm.request("track.getInfo", {
 							track: songName,
@@ -396,7 +414,6 @@ bot.on('speak', function (data) {
 								},
 								error: function(error) {
 									console.log("Album Name Error: " + error.message);
-									albumName = "";
 									bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
 								}
 							}
@@ -407,23 +424,10 @@ bot.on('speak', function (data) {
 							autocorrect: 1,
 							handlers: {
 								success: function(data) {
-									albumDate = data.album.releasedate;
-									console.log("Album Date Success: " + data);
-									if (albumName != "") {
-										console.log('This song is from the album "' + albumName + '", released ' + albumDate);
-									}
-									else {
-										bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
-									}
+
 								},
 								error: function(error) {
-									console.log("Album Date Error: " + error.message);
-									if (albumName = "") {
-										bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
-									}
-									else {
-										console.log('This song is from the album "' + albumName + '"');
-									}
+
 								}
 							}
 						});
@@ -432,14 +436,19 @@ bot.on('speak', function (data) {
 						console.log(err.message);
 						bot.speak("Sorry, I didn't catch that. I was thinking about exterminating the human race.");
 					}
+				}*/
+				else if(text.match(/cats/i)) {
+					var cats = catFact[Math.floor(Math.random() * catFact.length)];
+					bot.speak(cats);
 				}
 			}
 			else {
 				var message = responses[Math.floor(Math.random() * responses.length)];
 				bot.speak(message);
 			}
-		}
+		}	
 	}
+
 	
 	function sleep(ms) {
 		var dt = new Date();
@@ -456,3 +465,28 @@ bot.on('speak', function (data) {
 		});
 	}
 });
+
+justSaw = function (uid) {
+   return lastSeen[uid] = Date.now();
+};
+
+isAfk = function (userId, num) {
+   var last = lastSeen[userId];
+   var age_ms = Date.now() - last;
+   var age_m = Math.floor(age_ms / 1000 / 60);
+   if (age_m >= num) {
+      return true;
+   };
+   return false;
+};
+
+afkCheck = function () {
+   var afkLimit = 10; //An Afk Limit of 10 minutes.
+   for (i = 0; i < djList.length; i++) {
+      dj = djList[i]; //Pick a DJ
+      if (isAfk(dj, afkLimit)) { //if Dj is afk then
+         bot.pm(dj + " is AFK for 10 minutes.", userToFollow);
+      }; 
+   };
+};
+setInterval(afkCheck, 5000) //This repeats the check every five seconds.
